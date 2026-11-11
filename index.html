@@ -1,0 +1,1032 @@
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Spieler des Spiels</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@600;700&family=Inter:wght@400;500;600&display=swap">
+<style>
+:root{color-scheme:light}
+html,body{margin:0}
+[hidden]{display:none!important}
+img{max-width:100%}
+
+/* Layout: eine Spalte wie ein Spielbericht. Admin hat oben eine Tab-Leiste, Ergebnisse sind Anzeigetafel-Karten mit Rückennummer-Marken. */
+:root{
+  --bg:#f2f5ee; --surface:#ffffff; --surface2:#e7eee2; --fg:#13201a; --muted:#566a5d; --line:#d1dbca;
+  --accent:#1d6b43; --accent-fg:#ffffff; --gold:#f2c230; --gold-fg:#2a2000; --danger:#b3341f; --pitchA:#1d6b43; --pitchB:#1a6340; --hero-fg:#ffffff;
+  --display:'Barlow Condensed','Arial Narrow',system-ui,sans-serif;
+  --body:'Inter',system-ui,-apple-system,'Segoe UI',sans-serif;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --bg:#0d1511; --surface:#15211a; --surface2:#1d2c23; --fg:#e8efe5; --muted:#9bb0a2; --line:#2a3b31;
+    --accent:#58c488; --accent-fg:#06180e; --gold:#f0c43c; --gold-fg:#241c00; --danger:#ff8a73; --pitchA:#14503a; --pitchB:#124833; color-scheme:dark;
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#0d1511; --surface:#15211a; --surface2:#1d2c23; --fg:#e8efe5; --muted:#9bb0a2; --line:#2a3b31;
+  --accent:#58c488; --accent-fg:#06180e; --gold:#f0c43c; --gold-fg:#241c00; --danger:#ff8a73; --pitchA:#14503a; --pitchB:#124833; color-scheme:dark;
+}
+*{box-sizing:border-box}
+body{background:var(--bg);color:var(--fg);font-family:var(--body);font-size:15px;line-height:1.5;
+  padding-block:20px 48px;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
+.wrap{max-width:760px;margin:0 auto;display:flex;flex-direction:column;gap:16px}
+h1,h2,h3{font-family:var(--display);font-weight:700;letter-spacing:.02em;margin:0;text-wrap:balance;line-height:1.1}
+h1{font-size:2.2rem;text-transform:uppercase}
+h2{font-size:1.5rem;text-transform:uppercase;margin-top:8px}
+h3{font-size:1.25rem}
+p{margin:0}
+.muted{color:var(--muted)}
+.brand{display:flex;flex-direction:column;gap:2px}
+.brand small{color:var(--muted);font-size:.85rem}
+.tabs{display:flex;gap:6px;overflow-x:auto;padding-bottom:4px;border-bottom:1px solid var(--line)}
+.tab{font:600 .9rem var(--body);background:none;border:0;color:var(--muted);padding:10px 14px;cursor:pointer;border-bottom:3px solid transparent;white-space:nowrap}
+.tab[aria-current="true"]{color:var(--fg);border-bottom-color:var(--accent)}
+.card{background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:16px;display:flex;flex-direction:column;gap:14px;min-width:0}
+.card header{display:flex;justify-content:space-between;align-items:flex-start;gap:12px;flex-wrap:wrap}
+.card header .sub{color:var(--muted);font-size:.88rem}
+.pill{font:600 .72rem var(--body);letter-spacing:.06em;text-transform:uppercase;padding:4px 10px;border-radius:99px;background:var(--surface2);color:var(--muted)}
+.pill.open{background:var(--accent);color:var(--accent-fg)}
+.btn{font:600 .92rem var(--body);min-height:44px;padding:0 18px;border-radius:8px;border:1px solid var(--line);background:var(--surface);color:var(--fg);cursor:pointer}
+.btn:hover{background:var(--surface2)}
+.btn.primary{background:var(--accent);border-color:var(--accent);color:var(--accent-fg)}
+.btn.primary:hover{filter:brightness(1.08)}
+.btn.primary:disabled{opacity:.45;cursor:not-allowed;filter:none}
+.btn.danger{color:var(--danger);border-color:var(--danger);background:transparent}
+.btn.small{min-height:36px;padding:0 12px;font-size:.85rem}
+.row{display:flex;gap:10px;flex-wrap:wrap;align-items:flex-end}
+.row>*{min-width:0}
+.field{display:flex;flex-direction:column;gap:4px;flex:1 1 160px}
+.field label{font:600 .75rem var(--body);letter-spacing:.06em;text-transform:uppercase;color:var(--muted)}
+input[type=text],input[type=date],input[type=number],select{font:400 1rem var(--body);min-height:44px;padding:0 12px;border-radius:8px;border:1px solid var(--line);background:var(--bg);color:var(--fg);width:100%}
+:focus-visible{outline:3px solid var(--accent);outline-offset:2px}
+.nr{display:inline-flex;align-items:center;justify-content:center;min-width:2.2rem;height:2.2rem;padding:0 6px;border-radius:6px;background:var(--surface2);font:700 1.2rem var(--display);flex:none}
+.winner{background:var(--gold);color:var(--gold-fg);border-radius:10px;padding:14px 16px;display:flex;align-items:center;gap:14px}
+.winner .nr{background:var(--gold-fg);color:var(--gold);height:3rem;min-width:3rem;font-size:1.7rem}
+.winner small{display:block;font:600 .72rem var(--body);letter-spacing:.08em;text-transform:uppercase}
+.winner strong{font:700 1.8rem/1.1 var(--display);text-transform:uppercase;overflow-wrap:anywhere}
+.winner .votes{margin-left:auto;text-align:right;font:700 1.5rem var(--display);white-space:nowrap}
+.bars{display:flex;flex-direction:column;gap:8px}
+.bar{display:grid;grid-template-columns:40px minmax(0,1fr) auto;gap:10px;align-items:center}
+.bar .who{min-width:0}
+.bar .who b{font-weight:500;overflow-wrap:anywhere}
+.track{height:8px;border-radius:4px;background:var(--surface2);margin-top:4px;overflow:hidden}
+.track i{display:block;height:100%;background:var(--accent);border-radius:4px}
+.bar.top .track i{background:var(--gold)}
+.bar .cnt{font:700 1.2rem var(--display);font-variant-numeric:tabular-nums;white-space:nowrap}
+.cnt small{font:400 .75rem var(--body);color:var(--muted)}
+.empty{border:2px dashed var(--line);border-radius:10px;padding:28px 18px;text-align:center;display:flex;flex-direction:column;gap:6px;align-items:center}
+.empty h3{text-transform:uppercase}
+.notice{background:var(--surface2);border-radius:8px;padding:12px 14px;font-size:.92rem}
+.list{display:flex;flex-direction:column}
+.list>div{display:flex;align-items:center;gap:10px;padding:8px 0;border-top:1px solid var(--line)}
+.list>div:first-child{border-top:0}
+.list .name{flex:1;min-width:0;overflow-wrap:anywhere}
+.chips{display:flex;gap:8px;flex-wrap:wrap}
+.chip{font:600 .9rem var(--body);padding:8px 14px;border-radius:99px;border:1px solid var(--line);background:var(--surface);color:var(--fg);cursor:pointer}
+.chip[aria-pressed="true"]{background:var(--fg);color:var(--bg);border-color:var(--fg)}
+.checks{display:grid;grid-template-columns:repeat(auto-fill,minmax(170px,1fr));gap:6px}
+.check{display:flex;align-items:center;gap:8px;padding:8px 10px;border:1px solid var(--line);border-radius:8px;cursor:pointer;min-height:44px}
+.check input{width:20px;height:20px;accent-color:var(--accent);flex:none}
+.table{width:100%;border-collapse:collapse;font-variant-numeric:tabular-nums}
+.table th{font:600 .72rem var(--body);letter-spacing:.06em;text-transform:uppercase;color:var(--muted);text-align:left;padding:6px 8px}
+.table td{padding:9px 8px;border-top:1px solid var(--line)}
+.table td.n,.table th.n{text-align:right}
+.scroll{overflow-x:auto}
+.qrbox{display:flex;gap:20px;flex-wrap:wrap;align-items:flex-start}
+#qr{background:#fff;padding:14px;border-radius:10px;border:1px solid var(--line);width:252px;height:252px;display:flex;align-items:center;justify-content:center;flex:none;color:#000;font-size:.85rem;text-align:center}
+#qr img,#qr canvas{display:block}
+.qrinfo{flex:1 1 220px;display:flex;flex-direction:column;gap:12px;min-width:0}
+code{font:500 .85rem ui-monospace,Menlo,monospace;background:var(--surface2);padding:2px 6px;border-radius:4px;overflow-wrap:anywhere;word-break:break-all}
+#toast{position:fixed;left:50%;transform:translateX(-50%);bottom:calc(20px + env(safe-area-inset-bottom,0px));background:var(--fg);color:var(--bg);padding:10px 18px;border-radius:99px;font-weight:500;font-size:.92rem;z-index:20;max-width:calc(100% - 32px)}
+@media (prefers-reduced-motion:no-preference){.track i{transition:width .4s ease}}
+
+.hero{position:relative;overflow:hidden;display:flex;align-items:center;gap:16px;padding:18px 20px;border-radius:12px;color:var(--hero-fg);
+  background:repeating-linear-gradient(90deg,var(--pitchA) 0 44px,var(--pitchB) 44px 88px)}
+.hero::before{content:"";position:absolute;right:-60px;top:50%;width:190px;height:190px;margin-top:-95px;border:3px solid rgba(255,255,255,.22);border-radius:50%}
+.hero::after{content:"";position:absolute;right:34px;top:0;bottom:0;border-right:3px solid rgba(255,255,255,.22)}
+.hero>*{position:relative;z-index:1}
+.hero small{display:block;font:600 .78rem var(--body);letter-spacing:.12em;text-transform:uppercase;opacity:.85}
+.hero h1{color:var(--hero-fg);font-size:2.4rem}
+.crest{width:64px;height:72px;object-fit:contain;flex:none;display:block}
+.crestplate svg.crest{color:var(--pitchA)}
+.crest-edit{display:flex;align-items:center;justify-content:center;width:96px;height:108px;border:1px dashed var(--line);border-radius:10px;flex:none;color:var(--accent)}
+.crest-edit .crest{width:72px;height:82px}
+.vh{position:absolute;width:1px;height:1px;opacity:0;overflow:hidden}
+label.btn{display:inline-flex;align-items:center;cursor:pointer}
+label.btn:focus-within{outline:3px solid var(--accent);outline-offset:2px}
+.winner{box-shadow:0 0 0 3px color-mix(in srgb,var(--gold) 35%,transparent)}
+@media (max-width:420px){.hero{padding:16px}.hero h1{font-size:2rem}.crest{width:52px;height:60px}}
+textarea{font:400 .95rem var(--body);min-height:130px;padding:10px 12px;border-radius:8px;border:1px solid var(--line);background:var(--bg);color:var(--fg);width:100%;resize:vertical}
+
+.pick-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(122px,1fr));gap:10px}
+.pl{position:relative;display:flex;flex-direction:column;align-items:center;gap:8px;text-align:center;padding:12px 8px 10px;border-radius:14px;border:2px solid var(--line);background:var(--bg);color:var(--fg);font:500 .92rem/1.2 var(--body);cursor:pointer;min-width:0}
+.pl:hover:not(:disabled){border-color:var(--accent)}
+.pl:disabled{opacity:.6;cursor:not-allowed}
+.pl[aria-pressed="true"]{border-color:var(--accent);background:color-mix(in srgb,var(--accent) 14%,var(--bg))}
+.pl .pn{overflow-wrap:anywhere;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+.pl .tag{position:absolute;top:8px;left:8px;min-width:1.7rem;height:1.7rem;font-size:1rem;background:var(--surface);border:1px solid var(--line)}
+.pl .chk{position:absolute;top:8px;right:8px;width:1.6rem;height:1.6rem;border-radius:50%;background:var(--accent);color:var(--accent-fg);display:none;align-items:center;justify-content:center;font-weight:700;font-size:.9rem}
+.pl[aria-pressed="true"] .chk{display:flex}
+.av{display:block;object-fit:cover;border-radius:14px;flex:none;background:var(--surface2)}
+.av.ini{display:inline-flex;align-items:center;justify-content:center;font-family:var(--display);font-weight:700;color:var(--muted)}
+.av.wav{border-radius:50%;border:3px solid var(--gold-fg)}
+.bar .av{border-radius:50%}
+.list>div{flex-wrap:wrap}
+.colors{display:grid;grid-template-columns:repeat(auto-fill,minmax(230px,1fr));gap:10px}
+.colorrow{display:flex;align-items:center;gap:12px;padding:8px 10px;border:1px solid var(--line);border-radius:8px;min-width:0}
+input[type=color]{width:48px;height:44px;padding:2px;border:1px solid var(--line);border-radius:8px;background:var(--bg);cursor:pointer;flex:none}
+@media (prefers-reduced-motion:no-preference){
+  .pl{transition:transform .18s ease,border-color .18s ease}
+  .pl:hover:not(:disabled){transform:translateY(-3px)}
+  .pl .av{transition:transform .3s cubic-bezier(.3,1.5,.5,1)}
+  .pl[aria-pressed="true"] .av{transform:scale(1.08)}
+  .pl[aria-pressed="true"]{animation:ring 1.8s ease-out infinite}
+  .enter .pl{animation:plIn .55s cubic-bezier(.2,.8,.2,1) backwards;animation-delay:calc(var(--i) * 60ms)}
+  .pl.pop{animation:pop .45s cubic-bezier(.3,1.6,.5,1)}
+  .winner.reveal{animation:winIn .7s cubic-bezier(.2,.9,.3,1.2) backwards}
+  .winner.reveal .av{animation:spinIn .9s cubic-bezier(.2,.9,.3,1.1) backwards .15s}
+  @keyframes plIn{from{opacity:0;transform:translateY(16px) scale(.86)}to{opacity:1;transform:none}}
+  @keyframes pop{0%{transform:scale(.93)}55%{transform:scale(1.08)}100%{transform:scale(1)}}
+  @keyframes ring{0%{box-shadow:0 0 0 0 color-mix(in srgb,var(--accent) 45%,transparent)}100%{box-shadow:0 0 0 12px color-mix(in srgb,var(--accent) 0%,transparent)}}
+  @keyframes winIn{from{opacity:0;transform:scale(.9) translateY(10px)}to{opacity:1;transform:none}}
+  @keyframes spinIn{from{opacity:0;transform:rotate(-200deg) scale(.2)}to{opacity:1;transform:none}}
+}
+
+/* Kopfbereich */
+.hero{padding:22px 22px;gap:20px}
+.crestplate{flex:none;width:116px;height:116px;border-radius:50%;background:#ffffff;border:4px solid var(--gold);box-shadow:0 8px 22px rgba(0,0,0,.35);display:flex;align-items:center;justify-content:center}
+.crestplate .crest{width:76px;height:88px}
+.htxt{min-width:0;display:flex;flex-direction:column;align-items:flex-start;gap:10px}
+.hero h1.club{font-size:clamp(1.9rem,7vw,3.1rem);line-height:1;letter-spacing:.03em;text-shadow:0 2px 10px rgba(0,0,0,.28);overflow-wrap:anywhere}
+.tagline{display:inline-block;background:var(--gold);color:var(--gold-fg);font:700 .8rem var(--body);letter-spacing:.1em;text-transform:uppercase;padding:5px 14px;border-radius:99px}
+@media (max-width:420px){.hero{padding:16px;gap:14px}.crestplate{width:84px;height:84px;border-width:3px}.crestplate .crest{width:54px;height:62px}}
+/* Abstimmung */
+.pick-grid.has-sel .pl:not([aria-pressed="true"]){opacity:.68}
+.pl[aria-pressed="true"]{border-color:var(--gold);background:color-mix(in srgb,var(--gold) 20%,var(--bg));box-shadow:0 10px 24px rgba(0,0,0,.22);transform:scale(1.05);z-index:1}
+.pl[aria-pressed="true"] .chk{background:var(--gold);color:var(--gold-fg)}
+.pl[aria-pressed="true"] .av{transform:scale(1.1)}
+.pl.mine::after{content:"Deine Stimme";position:absolute;bottom:-10px;left:50%;transform:translateX(-50%);background:var(--gold);color:var(--gold-fg);font:700 .62rem var(--body);letter-spacing:.06em;text-transform:uppercase;padding:2px 9px;border-radius:99px;white-space:nowrap}
+.ballot{display:flex;align-items:center;gap:14px;flex-wrap:wrap;padding:14px;border-radius:12px;background:color-mix(in srgb,var(--gold) 16%,var(--surface));border:2px solid var(--gold);margin-top:6px}
+.ballot.none{background:var(--surface2);border:2px dashed var(--line);color:var(--muted)}
+.ballot .bl{display:flex;align-items:center;gap:14px;flex:1 1 200px;min-width:0}
+.ballot small{display:block;font:600 .72rem var(--body);letter-spacing:.08em;text-transform:uppercase;color:var(--muted)}
+.ballot strong{display:block;font:700 1.7rem/1.1 var(--display);text-transform:uppercase;overflow-wrap:anywhere}
+.av.bav{border-radius:50%;border:3px solid var(--gold)}
+/* Sieger */
+.winner{position:relative;overflow:hidden;flex-wrap:wrap;padding:22px 20px;gap:18px;background:linear-gradient(135deg,var(--gold),color-mix(in srgb,var(--gold) 68%,#fff));box-shadow:0 12px 30px rgba(0,0,0,.25)}
+.winner strong{font-size:2.3rem}
+.winner>div:not(.winav){min-width:0}
+.winav{position:relative;flex:none;padding-top:16px}
+.crown{position:absolute;top:-4px;left:50%;transform:translateX(-50%);width:40px;height:28px;color:var(--gold-fg)}
+.bar.top{background:color-mix(in srgb,var(--gold) 18%,transparent);border-radius:10px;padding:6px 8px}
+.bar.top .who b{font-weight:700}
+.confetti{position:fixed;inset:0;pointer-events:none;z-index:30;overflow:hidden}
+.confetti i{position:absolute;left:50%;top:38%;width:8px;height:14px;border-radius:2px;opacity:0;animation:fly 1.9s cubic-bezier(.2,.7,.3,1) forwards}
+@media (prefers-reduced-motion:no-preference){
+  .pl[aria-pressed="true"]{animation:ring2 1.8s ease-out infinite}
+  .enter .pl{animation:plIn .55s cubic-bezier(.2,.8,.2,1) backwards;animation-delay:calc(var(--i) * 60ms)}
+  .pl.pop[aria-pressed="true"]{animation:pop .45s cubic-bezier(.3,1.6,.5,1),ring2 1.8s .45s ease-out infinite}
+  .ballot.fresh{animation:slideUp .45s cubic-bezier(.2,.9,.3,1.2)}
+  .ballot.fresh .av{animation:spinIn .6s cubic-bezier(.2,.9,.3,1.1)}
+  .winner.reveal::after{content:"";position:absolute;inset:0;background:linear-gradient(110deg,transparent 30%,rgba(255,255,255,.6) 50%,transparent 70%);transform:translateX(-110%);animation:shine 1.5s .6s ease-out forwards;pointer-events:none}
+  .winner.reveal .crown{animation:crownIn .7s .5s cubic-bezier(.3,1.6,.5,1) backwards}
+  .bars.reveal .track i{transform-origin:left;animation:grow .9s cubic-bezier(.2,.8,.2,1) backwards .35s}
+  @keyframes ring2{0%{box-shadow:0 0 0 0 color-mix(in srgb,var(--gold) 60%,transparent),0 10px 24px rgba(0,0,0,.22)}100%{box-shadow:0 0 0 14px color-mix(in srgb,var(--gold) 0%,transparent),0 10px 24px rgba(0,0,0,.22)}}
+  @keyframes slideUp{from{opacity:0;transform:translateY(14px) scale(.96)}to{opacity:1;transform:none}}
+  @keyframes shine{to{transform:translateX(110%)}}
+  @keyframes crownIn{from{opacity:0;transform:translateX(-50%) translateY(-18px) rotate(-25deg) scale(.4)}to{opacity:1;transform:translateX(-50%)}}
+  @keyframes grow{from{transform:scaleX(0)}}
+  @keyframes fly{0%{opacity:1;transform:translate(0,0) rotate(0)}45%{opacity:1;transform:translate(calc(var(--dx) * .7),var(--dy)) rotate(calc(var(--rot) * .5))}100%{opacity:0;transform:translate(var(--dx),calc(var(--dy) + 420px)) rotate(var(--rot))}}
+}
+
+.member{border:1px solid var(--line);border-radius:10px;padding:12px;display:flex;flex-direction:column;gap:10px;min-width:0}
+.mh{display:flex;gap:10px;align-items:center}
+.mh input{flex:1;min-width:0}
+.mh .av.ini{width:40px;height:40px;font-size:16px;border-radius:50%}
+.member .row{align-items:center}
+.member select{width:auto;min-width:130px}
+.member .check{min-height:44px}
+
+.switch{display:flex;gap:10px;flex-wrap:wrap;align-items:center;background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:10px 12px}
+.switch label{font:600 .72rem var(--body);letter-spacing:.06em;text-transform:uppercase;color:var(--muted)}
+.switch select{flex:1 1 180px;width:auto;min-width:0}
+.clubpick{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:10px}
+.clubpick .btn{min-height:64px;font:700 1.25rem var(--display);text-transform:uppercase;letter-spacing:.02em;text-align:left;padding:0 16px;overflow-wrap:anywhere}
+.crow{border:1px solid var(--line);border-radius:10px;padding:12px;display:flex;flex-direction:column;gap:10px;min-width:0}
+.crow .row{align-items:center}
+.accgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(190px,1fr));gap:6px}
+
+input[type=password],input[type=email]{font:400 1rem var(--body);min-height:44px;padding:0 12px;border-radius:8px;border:1px solid var(--line);background:var(--bg);color:var(--fg);width:100%}
+.foot{display:flex;gap:10px;flex-wrap:wrap;align-items:center;justify-content:center;padding-top:14px;font-size:.85rem}
+.crow>.field,.member .field{flex:0 0 auto}
+</style>
+<!-- ============================================================
+     KONFIGURATION: hier deine Supabase-Daten eintragen
+     (Dashboard > Project Settings > API). Der "anon public"-Schlüssel
+     ist für den Browser gedacht. Den "service_role"-Schlüssel
+     NIEMALS hier eintragen.
+     ============================================================ -->
+<script>
+window.APP_CONFIG = {
+  SUPABASE_URL: 'https://github.com/vaneeq82/Spieler-des-Spiels.git',
+  SUPABASE_ANON_KEY: 'sb_publishable_r4Y5KpaFJ5aWuCaXvGNrBg_au8mjyxH'
+};
+</script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+</head>
+<body>
+<div class="wrap" id="app"><p class="muted">Lade…</p></div>
+<div id="toast" hidden></div>
+<script>
+(function(){
+var app=document.getElementById('app'), toastEl=document.getElementById('toast');
+var CONF=window.APP_CONFIG||{};
+var setupMissing=!CONF.SUPABASE_URL||!CONF.SUPABASE_ANON_KEY||String(CONF.SUPABASE_URL).indexOf('DEIN-PROJEKT')>-1||String(CONF.SUPABASE_ANON_KEY).indexOf('DEIN-')===0;
+
+function esc(s){return String(s==null?'':s).replace(/[&<>"']/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]})}
+function rid(){try{if(window.crypto&&crypto.randomUUID)return crypto.randomUUID()}catch(e){}return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g,function(c){var r=Math.random()*16|0;return (c==='x'?r:(r&3|8)).toString(16)})}
+function pad(n){return String(n).padStart(2,'0')}
+function today(){var d=new Date();return d.getFullYear()+'-'+pad(d.getMonth()+1)+'-'+pad(d.getDate())}
+function fmtDate(v){if(!v)return '';var d=new Date(v+'T12:00:00');return isNaN(d)?v:d.toLocaleDateString('de-DE',{weekday:'short',day:'2-digit',month:'2-digit',year:'numeric'})}
+function pct(a,b){return b?Math.round(a*100/b):0}
+function sortedMd(list){return list.slice().sort(function(a,b){return String(b.date||'').localeCompare(String(a.date||''))||(b.created||0)-(a.created||0)})}
+function mdTitle(m){return m.teamName+(m.opponent?' – '+m.opponent:'')}
+function toast(t){toastEl.textContent=t;toastEl.hidden=false;clearTimeout(toast.t);toast.t=setTimeout(function(){toastEl.hidden=true},3200)}
+
+/* ---------- Zustand ---------- */
+var sb=null, session=null, uid=null, role='', userEmail='', myClubIds=[], isSuper=false, isAdmin=false;
+var clubs=[], curClub='', cfg=emptyCfg(), photos={}, myVotes={}, myFlag={}, liveCounts={}, members=[], adminUsers=[], clubAdmins=[];
+var dbOk=true, loaded=false, ready=false, slow=false, loadErr='', mgmt=false, login=false, busy=false, hashPending=true;
+var authForm={mode:'in',email:'',pw:''};
+var view='', selTeam='', armed='', pending={}, forceFocus='';
+var form={team:'',opp:'',date:today(),off:{}}, tf={name:'',club:''}, pf={name:'',nr:''}, bulk='', qrBase='';
+var VIEWS=['spieltage','mannschaft','statistik','qr','einstellungen','vote'];
+var wantConfetti=false, burstDone=false, seen={}, toMark=[], lastPick=null;
+var THEME_KEYS=['accent','gold','bg','surface','fg'], HEXRE=/^#[0-9a-fA-F]{6}$/;
+var stab='allgemein', ROLES=['Mitglied','Spieler','Trainer','Betreuer','Elternteil','Vorstand'];
+function emptyCfg(){return {club:{name:'',crest:''},theme:{accent:'',gold:'',bg:'',surface:'',fg:''},settings:{paused:false,hideResults:false},teams:[],matchdays:[]}}
+
+function clubById(id){return clubs.filter(function(c){return c.id===id})[0]}
+function myAdminClubs(){if(isSuper)return clubs;if(role!=='admin')return [];return clubs.filter(function(c){return myClubIds.indexOf(c.id)>-1})}
+function canAdmin(){return !!curClub&&(isSuper||(role==='admin'&&myClubIds.indexOf(curClub)>-1))}
+function isBlocked(){return !!(myFlag&&myFlag.blocked)}
+function myPicks(){return myVotes}
+function canVote(){return !!curClub&&!cfg.settings.paused&&!isBlocked()}
+function counts(m){return m.status==='closed'?((m.result&&m.result.counts)||{}):(liveCounts[m.id]||{})}
+function total(c){var s=0;for(var k in c)s+=c[k];return s}
+
+/* ---------- Hilfen für Datenbankaufrufe ---------- */
+function chk(r){if(r&&r.error)throw r.error;return r}
+function errMsg(e){
+  var m=String((e&&(e.message||e.error_description||e.code))||e||'Fehler');
+  if(/schema cache|does not exist|Could not find the table/i.test(m))return 'Die Datenbank ist noch nicht eingerichtet. Führe zuerst schema.sql im SQL-Editor aus.';
+  if(/vote blocked/i.test(m))return 'Du hast in diesem Verein kein Stimmrecht.';
+  if(/voting closed/i.test(m))return 'Die Abstimmung ist beendet.';
+  if(/voting paused/i.test(m))return 'Die Abstimmung ist pausiert.';
+  if(/player not on ballot/i.test(m))return 'Dieser Spieler steht nicht zur Wahl.';
+  if(/row-level security|permission denied|not allowed/i.test(m))return 'Dazu fehlt dir die Berechtigung.';
+  if(/anonymous sign-ins are disabled/i.test(m))return 'Anonyme Anmeldung ist in Supabase noch nicht aktiviert (Authentication > Sign In / Providers).';
+  if(/Invalid login credentials/i.test(m))return 'E-Mail oder Passwort stimmt nicht.';
+  if(/Email not confirmed/i.test(m))return 'Bitte bestätige zuerst deine E-Mail-Adresse.';
+  if(/already registered/i.test(m))return 'Diese E-Mail ist schon registriert. Bitte anmelden.';
+  if(/Password should be/i.test(m))return 'Das Passwort ist zu kurz (mindestens 6 Zeichen).';
+  if(/rate limit|too many/i.test(m))return 'Zu viele Versuche. Bitte warte einen Moment.';
+  if(/Failed to fetch|NetworkError|Load failed/i.test(m))return 'Keine Verbindung zum Server.';
+  return m;
+}
+function run(fn,okMsg){
+  return Promise.resolve().then(fn).then(function(){if(okMsg)toast(okMsg);return refresh(true)}).catch(function(e){toast(errMsg(e));return refresh(true).catch(function(){})});
+}
+
+/* ---------- Daten laden ---------- */
+async function loadSession(){
+  var r=await sb.auth.getSession();
+  session=(r&&r.data&&r.data.session)||null;
+  uid=session?session.user.id:null;
+  var real=!!(session&&!session.user.is_anonymous);
+  userEmail=real?(session.user.email||''):'';
+  role='';myClubIds=[];isSuper=false;isAdmin=false;
+  if(!real)return;
+  var a=chk(await sb.from('app_users').select('role').eq('user_id',uid).maybeSingle());
+  role=(a.data&&a.data.role)||'';
+  if(role==='admin'){
+    var c=chk(await sb.from('club_admins').select('club_id').eq('user_id',uid));
+    myClubIds=(c.data||[]).map(function(x){return x.club_id});
+  }
+  isSuper=role==='super';isAdmin=role==='admin'||role==='super';
+}
+async function loadClubs(){
+  var r=chk(await sb.from('clubs').select('id,name,created_at').order('created_at'));
+  clubs=r.data||[];
+}
+function hashClub(){var m=/^v-([A-Za-z0-9-]+)$/.exec((location.hash||'').slice(1));return m?m[1]:''}
+function desiredClub(){
+  var hc=hashClub();
+  if(hashPending){hashPending=false;if(hc&&clubById(hc))return hc}
+  if(curClub&&clubById(curClub))return curClub;
+  var al=myAdminClubs();
+  if(isAdmin&&al.length)return al[0].id;
+  if(clubs.length===1)return clubs[0].id;
+  return '';
+}
+function resetClubState(){selTeam='';pending={};seen={};view='';armed='';qrBase='';myFlag={};liveCounts={};members=[];cfg=emptyCfg();photos={};loaded=false;applyTheme()}
+async function loadClub(){
+  if(!curClub){cfg=emptyCfg();photos={};applyTheme();loaded=true;return}
+  var id=curClub;
+  var r=await Promise.all([
+    sb.from('clubs').select('name,crest,theme,settings').eq('id',id).maybeSingle(),
+    sb.from('teams').select('id,name,created_at').eq('club_id',id).order('created_at'),
+    sb.from('players').select('id,team_id,name,nr,photo,created_at').eq('club_id',id).order('created_at'),
+    sb.from('matchdays').select('id,team_id,team_name,opponent,date,status,roster,created_at').eq('club_id',id).order('created_at'),
+    sb.from('results').select('matchday_id,counts,total').eq('club_id',id)
+  ]);
+  r.forEach(function(x){if(x.error)throw x.error});
+  var c=r[0].data;
+  if(!c){curClub='';resetClubState();loaded=true;return}
+  var ct=c.theme||{},th={};THEME_KEYS.forEach(function(k){th[k]=HEXRE.test(ct[k]||'')?ct[k]:''});
+  var st=c.settings||{},res={};
+  (r[4].data||[]).forEach(function(x){res[x.matchday_id]={counts:x.counts||{},total:x.total||0}});
+  var teams=(r[1].data||[]).map(function(t){return {id:t.id,name:t.name,players:[]}}),tmap={};
+  teams.forEach(function(t){tmap[t.id]=t});
+  photos={};
+  (r[2].data||[]).forEach(function(p){
+    if(p.photo&&String(p.photo).indexOf('data:image/')===0)photos[p.id]=p.photo;
+    var t=tmap[p.team_id];if(t)t.players.push({id:p.id,name:p.name,nr:p.nr||''});
+  });
+  var mds=(r[3].data||[]).map(function(m){return {id:m.id,teamId:m.team_id,teamName:m.team_name,opponent:m.opponent||'',date:m.date,status:m.status,roster:Array.isArray(m.roster)?m.roster:[],created:Date.parse(m.created_at)||0,result:res[m.id]}});
+  cfg={club:{name:c.name||'',crest:c.crest||''},theme:th,settings:{paused:!!st.paused,hideResults:!!st.hideResults},teams:teams,matchdays:mds};
+  applyTheme();
+  if(!cfg.teams.some(function(t){return t.id===selTeam}))selTeam=cfg.teams[0]?cfg.teams[0].id:'';
+  loaded=true;
+}
+async function loadMine(){
+  myVotes={};myFlag={};
+  if(!uid)return;
+  var v=chk(await sb.from('votes').select('matchday_id,player_id').eq('voter',uid));
+  (v.data||[]).forEach(function(x){myVotes[x.matchday_id]=x.player_id});
+  if(curClub){var f=chk(await sb.from('member_flags').select('blocked').eq('club_id',curClub).eq('voter',uid).maybeSingle());myFlag=f.data||{}}
+}
+async function loadExtras(){
+  liveCounts={};members=[];
+  if(canAdmin()){
+    var open=cfg.matchdays.filter(function(m){return m.status==='open'});
+    var rs=await Promise.all(open.map(function(m){return sb.rpc('matchday_counts',{p_md:m.id})}));
+    rs.forEach(function(r,i){if(r.error)throw r.error;var o={};(r.data||[]).forEach(function(x){o[x.player_id]=Number(x.n)});liveCounts[open[i].id]=o});
+  }
+  if(isSuper&&curClub){var mr=chk(await sb.rpc('club_members',{p_club:curClub}));members=mr.data||[]}
+  if(isSuper){
+    adminUsers=chk(await sb.from('app_users').select('user_id,email,role').order('created_at')).data||[];
+    clubAdmins=chk(await sb.from('club_admins').select('user_id,club_id')).data||[];
+  }
+}
+var refreshing=false, again=false, lastSnap='';
+function refresh(force){
+  if(refreshing){again=true;return Promise.resolve()}
+  refreshing=true;
+  return doRefresh(force).catch(function(e){
+    if(!ready){loadErr=errMsg(e);render()}else if(force){toast(errMsg(e))}
+  }).then(function(){refreshing=false;if(again){again=false;return refresh(true)}});
+}
+async function doRefresh(force){
+  await loadClubs();
+  var want=desiredClub();
+  if(want!==curClub){curClub=want;resetClubState()}
+  if(isSuper&&!clubs.length)mgmt=true;
+  await loadClub();
+  await loadMine();
+  await loadExtras();
+  loadErr='';ready=true;
+  var snap=JSON.stringify([clubs,cfg,photos,myVotes,myFlag,liveCounts,members,adminUsers,clubAdmins,role,myClubIds,curClub,mgmt]);
+  if(force||snap!==lastSnap){lastSnap=snap;render()}
+}
+function selectClub(id){
+  if(id===curClub&&loaded)return Promise.resolve();
+  curClub=id||'';resetClubState();
+  if(curClub){try{location.hash='v-'+curClub}catch(e){}}
+  render();return refresh(true);
+}
+
+/* ---------- Anmeldung für Admins ---------- */
+async function doAuth(){
+  var em=authForm.email.trim(),pw=authForm.pw;
+  if(!em||!pw){toast('Bitte E-Mail und Passwort eingeben');return}
+  busy=true;render();
+  try{
+    if(authForm.mode==='up'){
+      var r=await sb.auth.signUp({email:em,password:pw});if(r.error)throw r.error;
+      if(!r.data.session){toast('Fast fertig: Bitte bestätige deine E-Mail-Adresse und melde dich dann an.');authForm.mode='in'}
+    }else{
+      var r2=await sb.auth.signInWithPassword({email:em,password:pw});if(r2.error)throw r2.error;
+    }
+    authForm.pw='';
+    await loadSession();
+    if(userEmail)login=false;
+    myVotes={};lastSnap='';
+    await refresh(true);
+  }catch(e){toast(errMsg(e))}
+  busy=false;render();
+}
+async function doLogout(){
+  try{await sb.auth.signOut()}catch(e){}
+  await loadSession();
+  mgmt=false;view='';login=false;lastSnap='';
+  await refresh(true);
+}
+
+function rosterSort(a,b){var x=parseInt(a.nr,10),y=parseInt(b.nr,10);if(isNaN(x))x=9999;if(isNaN(y))y=9999;return x-y||String(a.name).localeCompare(b.name,'de')}
+
+function ini(name){var w=String(name||'').trim().split(/\s+/);return ((w[0]||'?')[0]+(w.length>1?w[w.length-1][0]:'')).toUpperCase()}
+function avatar(p,size,cls){
+  var st='width:'+size+'px;height:'+size+'px',ph=photos[p.id];
+  if(ph)return '<img class="av '+(cls||'')+'" style="'+st+'" src="'+esc(ph)+'" alt="">';
+  return '<span class="av ini '+(cls||'')+'" style="'+st+';font-size:'+Math.round(size*.4)+'px" aria-hidden="true">'+esc(ini(p.name))+'</span>';
+}
+/* ---------- Farben ---------- */
+function rgb(h){return [1,3,5].map(function(i){return parseInt(h.substr(i,2),16)})}
+function toHex(a){return '#'+a.map(function(v){var x=Math.max(0,Math.min(255,Math.round(v))).toString(16);return x.length<2?'0'+x:x}).join('')}
+function lum(h){var c=rgb(h).map(function(v){v/=255;return v<=0.03928?v/12.92:Math.pow((v+0.055)/1.055,2.4)});return 0.2126*c[0]+0.7152*c[1]+0.0722*c[2]}
+function onColor(h){return lum(h)>0.36?'#111111':'#ffffff'}
+function darken(h,k){return toHex(rgb(h).map(function(v){return v*k}))}
+function applyTheme(){
+  var r=document.documentElement.style,t=cfg.theme||{};
+  ['--accent','--accent-fg','--pitchA','--pitchB','--hero-fg','--gold','--gold-fg','--bg','--surface','--surface2','--fg','--muted','--line'].forEach(function(n){r.removeProperty(n)});
+  if(HEXRE.test(t.accent||'')){var pa=darken(t.accent,0.8);r.setProperty('--accent',t.accent);r.setProperty('--accent-fg',onColor(t.accent));r.setProperty('--pitchA',pa);r.setProperty('--pitchB',darken(t.accent,0.68));r.setProperty('--hero-fg',onColor(pa))}
+  if(HEXRE.test(t.gold||'')){r.setProperty('--gold',t.gold);r.setProperty('--gold-fg',onColor(t.gold))}
+  var any=false;
+  [['bg','--bg'],['surface','--surface'],['fg','--fg']].forEach(function(x){if(HEXRE.test(t[x[0]]||'')){r.setProperty(x[1],t[x[0]]);any=true}});
+  if(any){r.setProperty('--surface2','color-mix(in srgb,var(--fg) 8%,var(--surface))');r.setProperty('--muted','color-mix(in srgb,var(--fg) 62%,var(--bg))');r.setProperty('--line','color-mix(in srgb,var(--fg) 16%,var(--bg))')}
+}
+function effColor(k){
+  var v=cfg.theme&&cfg.theme[k];if(HEXRE.test(v||''))return v.toLowerCase();
+  var tok={accent:'--accent',gold:'--gold',bg:'--bg',surface:'--surface',fg:'--fg'}[k];
+  var c=getComputedStyle(document.documentElement).getPropertyValue(tok).trim();
+  return HEXRE.test(c)?c.toLowerCase():'#000000';
+}
+var PRESETS=[{n:'Standard',a:'',g:''},{n:'Blau',a:'#2f6fd6',g:'#f2c230'},{n:'Rot',a:'#d1343f',g:'#f5c542'},{n:'Orange',a:'#e0661a',g:'#ffd166'},{n:'Violett',a:'#7a4fd0',g:'#f2c230'}];
+var COLS=[['accent','Hauptfarbe','Kopfbereich, Buttons, Auswahl und Balken'],['gold','Siegerfarbe','Spieler des Spiels'],['bg','Seitenhintergrund',''],['surface','Kartenhintergrund',''],['fg','Textfarbe','']];
+
+function burst(){
+  try{if(window.matchMedia&&matchMedia('(prefers-reduced-motion: reduce)').matches)return}catch(e){}
+  var cs=getComputedStyle(document.documentElement);
+  var cols=[cs.getPropertyValue('--gold').trim()||'#f2c230',cs.getPropertyValue('--accent').trim()||'#1d6b43','#ffffff','#ff6b6b','#4dabf7','#ffd43b'];
+  var host=document.createElement('div');host.className='confetti';
+  for(var i=0;i<44;i++){
+    var el=document.createElement('i');
+    el.style.background=cols[i%cols.length];
+    el.style.setProperty('--dx',(Math.random()*440-220).toFixed(0)+'px');
+    el.style.setProperty('--dy',(-(Math.random()*220+80)).toFixed(0)+'px');
+    el.style.setProperty('--rot',(Math.random()*720-360).toFixed(0)+'deg');
+    el.style.animationDelay=(Math.random()*0.25).toFixed(2)+'s';
+    host.appendChild(el);
+  }
+  document.body.appendChild(host);
+  setTimeout(function(){if(host.parentNode)host.parentNode.removeChild(host)},2600);
+}
+function nrBadge(p){return '<span class="nr">'+(p.nr!==''&&p.nr!=null?esc(p.nr):'–')+'</span>'}
+
+/* ---------- Ergebnis-Darstellung ---------- */
+function resultHTML(m){
+  var c=counts(m),tot=total(c);
+  if(!tot)return '<p class="muted">Keine Stimmen abgegeben.</p>';
+  var rows=m.roster.map(function(p){return {p:p,n:c[p.id]||0}}).sort(function(a,b){return b.n-a.n||rosterSort(a.p,b.p)});
+  var max=rows[0].n,win=rows.filter(function(r){return r.n===max});
+  var rv='';if(!seen['w'+m.id]){rv=' reveal';toMark.push('w'+m.id);wantConfetti=true}
+  var h='';
+  if(win.length===1){
+    h+='<div class="winner'+rv+'">'+'<div class="winav"><svg class="crown" viewBox="0 0 24 16" aria-hidden="true"><path d="M2 15 1 4l6 5 5-8 5 8 6-5-1 11z" fill="currentColor"/></svg>'+avatar(win[0].p,96,'wav')+'</div>'+'<div><small>★ Spieler des Spiels'+(win[0].p.nr!==''&&win[0].p.nr!=null?' · #'+esc(win[0].p.nr):'')+'</small><strong>'+esc(win[0].p.name)+'</strong></div><div class="votes">'+max+' <small style="display:inline;font-size:.8rem">von '+tot+'</small></div></div>';
+  }else{
+    h+='<div class="winner'+rv+'"><div><small>Gleichstand mit je '+max+' Stimmen</small><strong>'+win.map(function(r){return esc(r.p.name)}).join(' · ')+'</strong></div><div class="votes">'+tot+' <small style="display:inline;font-size:.8rem">Stimmen</small></div></div>';
+  }
+  h+='<div class="bars'+rv+'">';
+  rows.filter(function(r){return r.n>0}).forEach(function(r){
+    h+='<div class="bar'+(r.n===max?' top':'')+'">'+avatar(r.p,40)+'<div class="who"><b>'+esc(r.p.name)+'</b><div class="track"><i style="width:'+pct(r.n,max)+'%"></i></div></div><div class="cnt">'+r.n+' <small>'+pct(r.n,tot)+'%</small></div></div>';
+  });
+  h+='</div>';
+  var zero=rows.filter(function(r){return r.n===0}).length;
+  if(zero)h+='<p class="muted" style="font-size:.85rem">'+zero+' Spieler ohne Stimme.</p>';
+  return h;
+}
+function resultCard(m,live){
+  return '<section class="card"><header><div><h3>'+esc(mdTitle(m))+'</h3><div class="sub">'+esc(fmtDate(m.date))+'</div></div><span class="pill'+(m.status==='open'?' open':'')+'">'+(m.status==='open'?'Läuft':'Beendet')+'</span></header>'+(live?'<p class="muted" style="font-size:.85rem">Zwischenstand, nur für dich sichtbar.</p>':'')+resultHTML(m)+'</section>';
+}
+function seasonHTML(){
+  var closed=cfg.matchdays.filter(function(m){return m.status==='closed'&&total(counts(m))>0});
+  if(!closed.length)return '';
+  var teams={};
+  closed.forEach(function(m){
+    var t=teams[m.teamId]||(teams[m.teamId]={name:m.teamName,games:0,pl:{}});t.games++;t.name=m.teamName;
+    var c=counts(m),max=0;for(var k in c)if(c[k]>max)max=c[k];
+    m.roster.forEach(function(p){
+      var e=t.pl[p.id]||(t.pl[p.id]={p:p,wins:0,votes:0});e.p=p;e.votes+=c[p.id]||0;if(max&&c[p.id]===max)e.wins++;
+    });
+  });
+  var h='<h2>Saison</h2>';
+  Object.keys(teams).forEach(function(id){
+    var t=teams[id];
+    var rows=Object.keys(t.pl).map(function(k){return t.pl[k]}).filter(function(e){return e.votes>0}).sort(function(a,b){return b.wins-a.wins||b.votes-a.votes||rosterSort(a.p,b.p)});
+    h+='<section class="card"><header><h3>'+esc(t.name)+'</h3><span class="pill">'+t.games+' Spieltag'+(t.games===1?'':'e')+'</span></header><div class="scroll"><table class="table"><thead><tr><th>#</th><th>Spieler</th><th class="n">Spieler des Spiels</th><th class="n">Stimmen</th></tr></thead><tbody>';
+    rows.forEach(function(e){h+='<tr><td>'+nrBadge(e.p)+'</td><td>'+esc(e.p.name)+'</td><td class="n"><b>'+e.wins+'</b></td><td class="n">'+e.votes+'</td></tr>'});
+    h+='</tbody></table></div></section>';
+  });
+  return h;
+}
+
+/* ---------- Ansicht: Abstimmung ---------- */
+function voteCard(m){
+  var mine=myPicks()[m.id],sel=pending[m.id]!==undefined?pending[m.id]:mine;
+  var enter='';if(!seen['v'+m.id]){enter=' enter';toMark.push('v'+m.id)}
+  var changed=!!sel&&sel!==mine;
+  var h='<section class="card"><header><div><h3>'+esc(mdTitle(m))+'</h3><div class="sub">'+esc(fmtDate(m.date))+' · Wer war Spieler des Spiels?</div></div><span class="pill open">Läuft</span></header><div class="pick-grid'+enter+(sel?' has-sel':'')+'">';
+  m.roster.slice().sort(rosterSort).forEach(function(p,i){
+    var cls='pl'+((lastPick&&lastPick.md===m.id&&lastPick.p===p.id)?' pop':'')+(mine===p.id?' mine':'');
+    var tag=(p.nr!==''&&p.nr!=null)?'<span class="nr tag">'+esc(p.nr)+'</span>':'';
+    h+='<button class="'+cls+'" style="--i:'+i+'" data-act="pick" data-md="'+m.id+'" data-p="'+p.id+'" aria-pressed="'+(sel===p.id)+'"'+(canVote()?'':' disabled')+'>'+avatar(p,84)+tag+'<span class="chk" aria-hidden="true">✓</span><span class="pn">'+esc(p.name)+'</span></button>';
+  });
+  h+='</div>';
+  var sp=sel?m.roster.filter(function(x){return x.id===sel})[0]:null;
+  var label=!mine?'Stimme abgeben':(changed?'Stimme ändern':'Stimme abgegeben ✓');
+  if(sp){
+    h+='<div class="ballot'+(lastPick&&lastPick.md===m.id?' fresh':'')+'"><div class="bl">'+avatar(sp,72,'bav')+'<div><small>'+(changed||!mine?'Deine Wahl':'Deine Stimme')+'</small><strong>'+esc(sp.name)+'</strong>'+((sp.nr!==''&&sp.nr!=null)?'<small>Nr. '+esc(sp.nr)+'</small>':'')+'</div></div><button class="btn primary" data-act="cast" data-md="'+m.id+'"'+(changed&&canVote()?'':' disabled')+'>'+label+'</button></div>';
+  }else{
+    h+='<div class="ballot none"><span>Tippe auf den Spieler, den du zum Spieler des Spiels wählst.</span></div>';
+  }
+  h+='</section>';
+  return h;
+}
+function voteView(){
+  var open=sortedMd(cfg.matchdays.filter(function(m){return m.status==='open'}));
+  var closed=sortedMd(cfg.matchdays.filter(function(m){return m.status==='closed'}));
+  var h='';
+  if(cfg.settings.paused)h+='<div class="notice">Die Abstimmung ist gerade pausiert. Sie geht weiter, sobald ein Admin sie freigibt.</div>';
+  else if(isBlocked(uid))h+='<div class="notice">Du hast für diese Abstimmung kein Stimmrecht. Wende dich bei Fragen an den Superadmin.</div>';
+  if(!open.length)h+='<div class="empty"><h3>Gerade läuft keine Abstimmung</h3><p class="muted">Sobald ein Spieltag freigegeben ist, erscheint er hier.</p></div>';
+  open.forEach(function(m){h+=voteCard(m)});
+  if(closed.length&&(canAdmin()||!cfg.settings.hideResults)){h+='<h2>Ergebnisse</h2>';closed.slice(0,8).forEach(function(m){h+=resultCard(m)});h+=seasonHTML()}
+  return h;
+}
+
+/* ---------- Ansicht: Spieltage (Admin) ---------- */
+function mdView(){
+  if(!cfg.teams.length)return '<div class="empty"><h3>Noch keine Mannschaft</h3><p class="muted">Lege zuerst eine Mannschaft mit Spielern an. Danach kannst du Spieltage erstellen.</p><button class="btn primary" data-act="tab" data-v="mannschaft">Mannschaft anlegen</button></div>';
+  var t=cfg.teams.filter(function(x){return x.id===form.team})[0]||cfg.teams[0];form.team=t.id;
+  var avail=t.players.filter(function(p){return !form.off[p.id]}).length;
+  var h='<form class="card" data-form="addMd"><h3>Neuer Spieltag</h3><div class="row">';
+  h+='<div class="field"><label for="f-team">Mannschaft</label><select id="f-team" data-f="team">'+cfg.teams.map(function(x){return '<option value="'+x.id+'"'+(x.id===t.id?' selected':'')+'>'+esc(x.name)+'</option>'}).join('')+'</select></div>';
+  h+='<div class="field"><label for="f-opp">Gegner</label><input type="text" id="f-opp" data-f="opp" value="'+esc(form.opp)+'" placeholder="z. B. SV Musterdorf" autocomplete="off"></div>';
+  h+='<div class="field"><label for="f-date">Datum</label><input type="date" id="f-date" data-f="date" value="'+esc(form.date)+'"></div></div>';
+  if(!t.players.length){h+='<p class="muted">Diese Mannschaft hat noch keine Spieler.</p>'}
+  else{
+    h+='<div class="field"><label>Zur Wahl stehen (abwesende Spieler abwählen)</label></div><div class="checks">';
+    t.players.slice().sort(rosterSort).forEach(function(p){h+='<label class="check"><input type="checkbox" id="r-'+p.id+'" data-f="r:'+p.id+'"'+(form.off[p.id]?'':' checked')+'>'+nrBadge(p)+'<span>'+esc(p.name)+'</span></label>'});
+    h+='</div>';
+  }
+  h+='<div class="row"><button class="btn primary" type="submit"'+(avail<2?' disabled':'')+'>Spieltag anlegen und Abstimmung starten</button></div></form>';
+  var list=sortedMd(cfg.matchdays);
+  if(!list.length)return h+'<div class="empty"><h3>Noch kein Spieltag</h3><p class="muted">Der erste Spieltag erscheint hier, sobald du ihn anlegst.</p></div>';
+  h+='<h2>Alle Spieltage</h2>';
+  list.forEach(function(m){
+    var c=counts(m),tot=total(c),open=m.status==='open';
+    h+='<section class="card"><header><div><h3>'+esc(mdTitle(m))+'</h3><div class="sub">'+esc(fmtDate(m.date))+' · '+tot+' Stimme'+(tot===1?'':'n')+'</div></div><span class="pill'+(open?' open':'')+'">'+(open?'Läuft':'Beendet')+'</span></header>';
+    if(tot)h+=resultHTML(m);
+    if(open&&tot)h+='<p class="muted" style="font-size:.85rem">Zwischenstand, nur für dich sichtbar. Die Wahl endet mit dem Beenden.</p>';
+    h+='<div class="row">'+(open?'<button class="btn primary" data-act="closeMd" data-md="'+m.id+'">Wahl beenden und Ergebnis zeigen</button>':'<button class="btn" data-act="openMd" data-md="'+m.id+'">Wahl wieder öffnen</button>');
+    if(tot)h+='<button class="btn danger" data-act="resetMd" data-md="'+m.id+'">'+(armed==='rs'+m.id?'Wirklich alle Stimmen löschen?':'Stimmen löschen')+'</button>';var k='md'+m.id;h+='<button class="btn danger" data-act="delMd" data-md="'+m.id+'">'+(armed===k?'Spieltag wirklich löschen?':'Spieltag löschen')+'</button></div></section>';
+  });
+  return h;
+}
+
+/* ---------- Ansicht: Mannschaft (Admin) ---------- */
+function teamView(){
+  var t=cfg.teams.filter(function(x){return x.id===selTeam})[0]||cfg.teams[0];if(t)selTeam=t.id;
+  var h='<section class="card"><h3>Verein</h3><div class="row" style="align-items:center"><div class="crest-edit">'+crestHTML()+'</div><div class="field" style="flex:1 1 200px"><label for="c-name">Vereinsname</label><input type="text" id="c-name" data-f="cname" value="'+esc(cfg.club.name)+'" placeholder="Name deines Vereins" autocomplete="off"></div></div><div class="row"><label class="btn" for="c-file">Wappen hochladen<input type="file" id="c-file" class="vh" accept="image/png,image/jpeg,image/svg+xml,image/webp" data-f="crest"></label>'+(cfg.club.crest?'<button class="btn danger" data-act="rmCrest">Wappen entfernen</button>':'')+'</div><p class="muted" style="font-size:.85rem">Lade dein eigenes Vereinswappen als Bilddatei hoch (PNG, JPG, SVG). Es erscheint oben auf der Seite, auch bei den Abstimmenden.</p></section>';
+  h+='<form class="card" data-form="addTeam"><h3>Mannschaften</h3>';
+  if(cfg.teams.length)h+='<div class="chips">'+cfg.teams.map(function(x){return '<button type="button" class="chip" data-act="selTeam" data-id="'+x.id+'" aria-pressed="'+(x.id===selTeam)+'">'+esc(x.name)+'</button>'}).join('')+'</div>';
+  h+='<div class="row"><div class="field"><label for="t-name">'+(cfg.teams.length?'Weitere Mannschaft':'Name der Mannschaft')+'</label><input type="text" id="t-name" data-f="tname" value="'+esc(tf.name)+'" placeholder="z. B. FC Beispiel U15" autocomplete="off"></div><button class="btn primary" type="submit">Mannschaft anlegen</button></div></form>';
+  if(!t)return h+'<div class="empty"><h3>Noch keine Mannschaft</h3><p class="muted">Gib oben einen Namen ein, danach legst du die Spieler an.</p></div>';
+  h+='<section class="card"><header><h3>Spieler: '+esc(t.name)+'</h3><span class="pill">'+t.players.length+' Spieler</span></header>';
+  h+='<form class="row" data-form="addPlayer"><div class="field" style="flex:3 1 180px"><label for="p-name">Name</label><input type="text" id="p-name" data-f="pname" value="'+esc(pf.name)+'" placeholder="Vor- und Nachname" autocomplete="off"></div><div class="field" style="flex:1 1 90px"><label for="p-nr">Nr.</label><input type="number" id="p-nr" data-f="pnr" value="'+esc(pf.nr)+'" min="0" max="99" inputmode="numeric"></div><button class="btn primary" type="submit">Hinzufügen</button></form>';
+  h+='<form class="field" data-form="bulk" style="gap:8px"><label for="p-bulk">Spielerliste einfügen (eine Zeile pro Spieler)</label><textarea id="p-bulk" data-f="pbulk" placeholder="7 Max Mustermann&#10;10 Jonas Beispiel&#10;Lukas Test 23" spellcheck="false">'+esc(bulk)+'</textarea><div class="row" style="align-items:center"><button class="btn" type="submit">Liste übernehmen</button><span class="muted" style="font-size:.85rem">Die Nummer kann vor oder nach dem Namen stehen oder fehlen. Doppelte Namen werden übersprungen.</span></div></form>';
+  if(t.players.length){
+    h+='<div class="list">';
+    t.players.slice().sort(rosterSort).forEach(function(p){h+='<div>'+avatar(p,44)+nrBadge(p)+'<span class="name">'+esc(p.name)+'</span><label class="btn small">'+(photos[p.id]?'Foto ändern':'Foto')+'<input type="file" class="vh" id="ph-'+p.id+'" accept="image/*" data-f="photo:'+p.id+'"></label>'+(photos[p.id]?'<button class="btn small" data-act="rmPhoto" data-id="'+p.id+'">Foto entfernen</button>':'')+'<button class="btn small danger" data-act="delPlayer" data-id="'+p.id+'">'+(armed==='pl'+p.id?'Sicher?':'Entfernen')+'</button></div>'});
+    h+='</div>';
+  }else h+='<p class="muted">Noch keine Spieler. Trage oben den ersten Spieler ein.</p>';
+  h+='<p class="muted" style="font-size:.85rem">Fotos sind für alle sichtbar, die die Seite öffnen. Bei Minderjährigen brauchst du die Zustimmung der Eltern.</p>';h+='<div><button class="btn danger small" data-act="delTeam" data-id="'+t.id+'">'+(armed==='tm'+t.id?'Mannschaft wirklich löschen?':'Mannschaft löschen')+'</button></div></section>';
+  return h;
+}
+
+/* ---------- Ansicht: Statistik ---------- */
+function statsView(){
+  if(!canAdmin()&&cfg.settings.hideResults)return '<div class="notice">Die Ergebnisse sind in diesem Verein nur für Admins sichtbar.</div>';
+  var closed=sortedMd(cfg.matchdays.filter(function(m){return m.status==='closed'}));
+  if(!closed.length)return '<div class="empty"><h3>Noch keine Ergebnisse</h3><p class="muted">Sobald du eine Wahl beendest, erscheint hier die Statistik.</p></div>';
+  var h=seasonHTML().replace(/^<h2>Saison<\/h2>/,'<h2>Saison</h2>');
+  h+='<h2>Spieltage</h2>';closed.forEach(function(m){h+=resultCard(m)});
+  return h;
+}
+
+
+function initials(){
+  var n=(cfg.club&&cfg.club.name||'').trim()||'Spieler des Spiels';
+  var w=n.split(/\s+/).filter(function(x){return /[A-Za-zÄÖÜäöü]/.test(x[0])});
+  return (w.slice(0,3).map(function(x){return x[0]}).join('')||'S').toUpperCase();
+}
+function crestHTML(){
+  var c=cfg.club&&cfg.club.crest;
+  if(c)return '<img class="crest" src="'+esc(c)+'" alt="Vereinswappen">';
+  return '<svg class="crest" viewBox="0 0 64 72" role="img" aria-label="Wappen"><path d="M32 4 58 13v23c0 16-11 27-26 32C17 63 6 52 6 36V13z" fill="none" stroke="currentColor" stroke-width="3.5" stroke-linejoin="round"/><text x="32" y="44" text-anchor="middle" font-family="Barlow Condensed,Arial Narrow,sans-serif" font-weight="700" font-size="24" fill="currentColor">'+esc(initials())+'</text></svg>';
+}
+function header(){
+  var cl=curClub&&!mgmt?clubById(curClub):null,n=((cfg.club&&cfg.club.name)||(cl&&cl.name)||'').trim();
+  return '<header class="hero"><div class="crestplate">'+crestHTML()+'</div><div class="htxt">'
+    +(n?'<h1 class="club">'+esc(n)+'</h1><span class="tagline">★ Spieler des Spiels</span>':'<h1 class="club">Spieler des Spiels</h1><span class="tagline">Wahl nach jedem Spieltag</span>')
+    +'</div></header>';
+}
+
+/* ---------- Anmeldung, Fußzeile ---------- */
+function footerHTML(){
+  if(!sb)return '';
+  var h='<div class="foot">';
+  if(userEmail){
+    h+='<span class="muted">Angemeldet: '+esc(userEmail)+' · '+esc({'super':'Superadmin','admin':'Admin','pending':'wartet auf Freigabe'}[role]||role)+'</span><button class="btn small" data-act="logout">Abmelden</button>';
+  }else h+='<button class="btn small" data-act="loginToggle">'+(login?'Anmeldung schließen':'Admin-Anmeldung')+'</button>';
+  return h+'</div>';
+}
+function loginCard(){
+  var up=authForm.mode==='up';
+  return '<form class="card" data-form="auth"><h3>'+(up?'Admin-Konto erstellen':'Admin-Anmeldung')+'</h3><p class="muted" style="font-size:.9rem">Nur für Admins. Zum Abstimmen brauchst du kein Konto.</p>'
+   +'<div class="row"><div class="field"><label for="au-email">E-Mail</label><input type="email" id="au-email" data-f="auemail" value="'+esc(authForm.email)+'" autocomplete="email"></div>'
+   +'<div class="field"><label for="au-pw">Passwort</label><input type="password" id="au-pw" data-f="aupw" value="'+esc(authForm.pw)+'" autocomplete="'+(up?'new-password':'current-password')+'"></div></div>'
+   +'<div class="row"><button class="btn primary" type="submit"'+(busy?' disabled':'')+'>'+(up?'Konto erstellen':'Anmelden')+'</button><button class="btn" type="button" data-act="authMode">'+(up?'Ich habe schon ein Konto':'Neues Konto erstellen')+'</button></div>'
+   +(up?'<p class="muted" style="font-size:.85rem">Nach dem Erstellen muss der Superadmin dein Konto freigeben und dir einen oder mehrere Vereine zuteilen.</p>':'')+'</form>';
+}
+
+/* ---------- Vereinsverwaltung (Superadmin) ---------- */
+function clubsMgmtView(){
+  var h='<section class="card"><h3>Neuer Verein</h3><form class="row" data-form="addClub"><div class="field"><label for="nc-name">Vereinsname</label><input type="text" id="nc-name" data-f="ncname" value="'+esc(tf.club||'')+'" placeholder="z. B. SV Renchen" autocomplete="off"></div><button class="btn primary" type="submit">Verein anlegen</button></form><p class="muted" style="font-size:.85rem">Jeder Verein hat eigene Mannschaften, Spieler, Spieltage, Mitglieder, Farben, Wappen und Einstellungen sowie einen eigenen QR-Code.</p></section>';
+  h+='<section class="card"><header><h3>Vereine</h3><span class="pill">'+clubs.length+'</span></header>';
+  if(!clubs.length)h+='<div class="empty"><h3>Noch kein Verein</h3><p class="muted">Lege oben deinen ersten Verein an.</p></div>';
+  clubs.forEach(function(c){
+    h+='<div class="crow"><div class="field"><label for="cn-'+c.id+'">Name</label><input type="text" id="cn-'+c.id+'" data-f="clubname:'+c.id+'" value="'+esc(c.name)+'" autocomplete="off"></div><div class="row"><button class="btn primary small" data-act="openClub" data-id="'+c.id+'">Öffnen</button><button class="btn small" data-act="openClubQr" data-id="'+c.id+'">QR-Code</button><button class="btn small danger" data-act="delClub" data-id="'+c.id+'">'+(armed==='cl'+c.id?'Verein samt allen Daten löschen?':'Löschen')+'</button></div></div>';
+  });
+  h+='</section>';
+  var ppl=adminUsers.filter(function(u){return u.user_id!==uid});
+  h+='<section class="card"><h3>Konten und ihre Vereine</h3><p class="muted" style="font-size:.9rem">Wer sich in der App ein Admin-Konto erstellt, erscheint hier als „Wartet auf Freigabe“. Gib das Konto frei und wähle die Vereine, die der Admin verwalten darf.</p>';
+  if(!ppl.length)h+='<div class="empty"><h3>Noch keine weiteren Konten</h3><p class="muted">Admins erstellen ihr Konto über „Admin-Anmeldung“ am Seitenende.</p></div>';
+  ppl.forEach(function(u){
+    var a=clubAdmins.filter(function(x){return x.user_id===u.user_id}).map(function(x){return x.club_id});
+    h+='<div class="crow"><div class="mh"><span class="av ini" aria-hidden="true">'+esc(ini(u.email||'?'))+'</span><b style="font-weight:600;min-width:0;overflow-wrap:anywhere">'+esc(u.email||'Konto')+'</b></div>';
+    if(u.role==='super')h+='<div><span class="pill open">Superadmin</span></div>';
+    else{
+      h+='<div class="row"><select id="ur-'+u.user_id+'" data-f="urole:'+u.user_id+'" aria-label="Rolle"><option value="pending"'+(u.role==='pending'?' selected':'')+'>Wartet auf Freigabe</option><option value="admin"'+(u.role==='admin'?' selected':'')+'>Admin</option></select></div>';
+      if(u.role==='admin'){
+        if(!clubs.length)h+='<p class="muted">Lege zuerst einen Verein an.</p>';
+        else h+='<div class="accgrid">'+clubs.map(function(c){return '<label class="check"><input type="checkbox" id="ac-'+u.user_id+'-'+c.id+'" data-f="acc:'+u.user_id+':'+c.id+'"'+(a.indexOf(c.id)>-1?' checked':'')+'><span>'+esc(c.name)+'</span></label>'}).join('')+'</div>';
+      }
+    }
+    h+='</div>';
+  });
+  return h+'</section>';
+}
+function switcher(){
+  var list=myAdminClubs();
+  if(!isSuper&&list.length<2)return '';
+  var h='<div class="switch"><label for="club-sel">Verein</label>';
+  if(list.length)h+='<select id="club-sel" data-f="clubsel">'+(mgmt||!curClub?'<option value="">Bitte wählen</option>':'')+list.map(function(c){return '<option value="'+c.id+'"'+((!mgmt&&c.id===curClub)?' selected':'')+'>'+esc(c.name)+'</option>'}).join('')+'</select>';
+  if(isSuper)h+='<button class="btn small'+(mgmt?' primary':'')+'" data-act="mgmt">'+(mgmt?'Verwaltung geöffnet':'Vereine verwalten')+'</button>';
+  return h+'</div>';
+}
+
+/* ---------- Einstellungen ---------- */
+function switchRow(id,key,title,sub,on){
+  return '<label class="check" style="align-items:flex-start"><input type="checkbox" id="'+id+'" data-f="set:'+key+'"'+(on?' checked':'')+'><span><b style="font-weight:600">'+title+'</b><br><span class="muted" style="font-size:.85rem">'+sub+'</span></span></label>';
+}
+function settingsTabs(){
+  var T=[['allgemein','Allgemein'],['mitglieder','Mitglieder'],['farben','Farben'],['zugriff','Zugriff']];
+  return '<div class="chips">'+T.map(function(x){return '<button type="button" class="chip" data-act="stab" data-v="'+x[0]+'" aria-pressed="'+(stab===x[0])+'">'+x[1]+'</button>'}).join('')+'</div>';
+}
+function memberView(){
+  if(!isSuper)return '<div class="notice">Nur der Superadmin verwaltet Mitglieder.</div>';
+  var rows=members.slice().sort(function(a,b){return String(a.voter).localeCompare(String(b.voter))}).map(function(m,i){
+    var f={label:m.label||'',role:m.role||'Mitglied',blocked:!!m.blocked};
+    return {u:m.voter,f:f,n:m.votes_n||0,auto:'Mitglied '+(i+1),name:f.label||('Mitglied '+(i+1))};
+  }).sort(function(a,b){return a.name.localeCompare(b.name,'de')});
+  var h='<section class="card"><header><h3>Mitglieder</h3><span class="pill">'+rows.length+'</span></header><p class="muted" style="font-size:.9rem">Wer in diesem Verein abgestimmt hat, erscheint hier automatisch, ohne Namen. Gib den Einträgen selbst Namen und Rollen. Du kannst das Stimmrecht entziehen. Gesperrte Mitglieder zählen in neuen Auswertungen nicht mit. Beendete Spieltage behalten ihr gespeichertes Ergebnis.</p><p class="muted" style="font-size:.85rem">Ein Mitglied ist ein Gerät beziehungsweise ein Browser. Wer seine Browserdaten löscht oder ein anderes Gerät nutzt, erscheint als neues Mitglied.</p>';
+  if(!rows.length)h+='<div class="empty"><h3>Noch keine Mitglieder</h3><p class="muted">Sobald jemand abstimmt, taucht er hier auf.</p></div>';
+  rows.forEach(function(r){
+    var u=r.u;
+    h+='<div class="member"><div class="mh"><span class="av ini" aria-hidden="true">'+esc(ini(r.name))+'</span><input type="text" id="ml-'+u+'" data-f="mlabel:'+u+'" value="'+esc(r.f.label)+'" placeholder="'+esc(r.auto)+'" autocomplete="off" aria-label="Anzeigename">'+(u===uid?'<span class="pill open">Du</span>':'')+'</div>'
+     +'<div class="row"><select id="mr-'+u+'" data-f="mrole:'+u+'" aria-label="Rolle">'+ROLES.map(function(x){return '<option'+(x===r.f.role?' selected':'')+'>'+x+'</option>'}).join('')+'</select>'
+     +'<label class="check"><input type="checkbox" id="mv-'+u+'" data-f="mvote:'+u+'"'+(r.f.blocked?'':' checked')+'><span>Stimmrecht</span></label>'
+     +'<span class="muted" style="font-size:.85rem">'+r.n+' Spieltag'+(r.n===1?'':'e')+' abgestimmt</span>'
+     +'<button class="btn small danger" data-act="delMember" data-id="'+u+'">'+(armed==='mb'+u?'Alle Stimmen löschen?':'Entfernen')+'</button></div></div>';
+  });
+  return h+'<p class="muted" style="font-size:.85rem">„Entfernen“ löscht den Eintrag und alle Stimmen dieses Mitglieds in diesem Verein. Wer wieder abstimmt, erscheint neu.</p></section>';
+}
+function settingsView(){
+  var st=cfg.settings,h=settingsTabs();
+  if(stab==='mitglieder')return h+memberView();
+  if(stab==='farben'){
+    h+='<section class="card"><h3>Farben</h3><div class="chips">'+PRESETS.map(function(p,i){return '<button type="button" class="chip" data-act="preset" data-i="'+i+'">'+p.n+'</button>'}).join('')+'</div><div class="colors">'
+      +COLS.map(function(c){return '<label class="colorrow"><input type="color" id="th-'+c[0]+'" data-f="th:'+c[0]+'" value="'+effColor(c[0])+'"><span><b style="font-weight:600">'+c[1]+'</b>'+(c[2]?'<br><span class="muted" style="font-size:.85rem">'+c[2]+'</span>':'')+'</span></label>'}).join('')
+      +'</div><div><button class="btn small" data-act="resetTheme">Alle Farben zurücksetzen</button></div><p class="muted" style="font-size:.85rem">Die Farben gelten nur für diesen Verein und für alle, die seine Seite öffnen. Hintergrund, Karten und Schrift gelten im hellen und im dunklen Modus. Wähle dafür eine helle Fläche mit dunkler Schrift oder umgekehrt, damit alles lesbar bleibt.</p></section>';
+    return h;
+  }
+  if(stab==='zugriff'){
+    h+='<section class="card"><h3>Rollen</h3><div class="list"><div><span class="pill open">Superadmin</span><span class="name">Sieht alle Vereine, legt Vereine an, gibt Admin-Konten frei, teilt ihnen Vereine zu und verwaltet Mitglieder.</span></div><div><span class="pill open">Admin</span><span class="name">Pflegt nur die Vereine, die der Superadmin ihm zuteilt: Mannschaften, Spieler, Spieltage, Fotos, Farben und Einstellungen.</span></div><div><span class="pill">Besucher</span><span class="name">Alle anderen, ohne Anmeldung. Sie sehen Abstimmung, Statistik und QR-Code und können abstimmen.</span></div></div></section>';
+    h+='<section class="card"><h3>Wer darf was</h3><div class="scroll"><table class="table"><thead><tr><th>Aktion</th><th>Wer</th></tr></thead><tbody>'
+      +'<tr><td>Vereine anlegen und löschen, Admins freigeben und zuteilen, Mitglieder und Stimmrecht verwalten</td><td>Nur Superadmin</td></tr>'
+      +'<tr><td>Mannschaften, Spieler, Spieltage, Fotos, Farben, Einstellungen, Wahl beenden, Stimmen löschen</td><td>Admins ihres Vereins, Superadmin überall</td></tr>'
+      +'<tr><td>Abstimmen (eine Stimme pro Gerät und Spieltag)</td><td>Jeder ohne Anmeldung</td></tr>'
+      +'<tr><td>Statistik und Ergebnisse ansehen</td><td>Jeder (pro Verein abschaltbar)</td></tr>'
+      +'</tbody></table></div><p class="muted" style="font-size:.85rem">Diese Rechte erzwingt die Datenbank selbst (Row Level Security), nicht nur diese Seite. Ein Admin kann auch mit eigenen Werkzeugen nur Daten seiner zugeteilten Vereine ändern.</p></section>';
+    h+='<section class="card"><h3>Neuen Admin einrichten</h3><ol style="margin:0;padding-left:20px;display:flex;flex-direction:column;gap:8px"><li>Der Admin öffnet die Seite und erstellt über „Admin-Anmeldung“ am Seitenende ein Konto.</li><li>Du öffnest „Vereine verwalten“ und gibst sein Konto unter „Konten und ihre Vereine“ als Admin frei.</li><li>Du setzt die Haken bei den Vereinen, die er verwalten darf.</li></ol></section>';
+    return h;
+  }
+  var roleTxt={'super':'Superadmin','admin':'Admin'}[role]||'Besucher';
+  h+='<section class="card"><h3>Dein Zugriff</h3><div class="list"><div><span class="name">Rolle</span><span class="pill open">'+roleTxt+'</span></div>'+(userEmail?'<div><span class="name">Konto</span><b style="overflow-wrap:anywhere">'+esc(userEmail)+'</b></div>':'')+'</div></section>';
+  h+='<section class="card"><h3>Abstimmung</h3>'
+    +switchRow('s-paused','paused','Abstimmung pausieren','Niemand kann Stimmen abgeben oder ändern, bis du sie wieder freigibst.',st.paused)
+    +switchRow('s-hide','hideResults','Ergebnisse nur für Admins','Besucher sehen keine Ergebnisse und keine Saisonstatistik. Die Datenbank liefert sie ihnen dann auch nicht aus.',st.hideResults)
+    +'<p class="muted" style="font-size:.85rem">Pro Gerät und Spieltag zählt eine Stimme. Wer seine Browserdaten löscht oder ein anderes Gerät nutzt, kann erneut abstimmen.</p></section>';
+  return h;
+}
+
+/* ---------- QR-Code ---------- */
+function defaultBase(){try{return location.href.split('#')[0]}catch(e){return ''}}
+function qrTarget(){var b=(qrBase||defaultBase()).trim();return (b&&curClub)?b.split('#')[0]+'#v-'+curClub:''}
+function qrView(){
+  var adm=canAdmin(),base=qrBase||defaultBase();
+  return '<section class="card"><h3>Abstimmung per QR-Code'+(cfg.club.name?' · '+esc(cfg.club.name):'')+'</h3><div class="qrbox"><div id="qr"></div><div class="qrinfo">'
+   +'<p>Mit der Handykamera scannen und direkt zur Abstimmung dieses Vereins kommen.</p>'
+   +(adm?'<div class="field"><label for="qr-url">Adresse dieser Seite</label><input type="text" id="qr-url" data-f="qrurl" value="'+esc(base)+'" autocomplete="off"></div>':'')
+   +'<p class="muted" style="font-size:.85rem">Link im QR-Code:<br><code id="qr-full">'+esc(qrTarget())+'</code></p>'
+   +'<div><button class="btn" data-act="copy">Link kopieren</button></div></div></div></section>'
+   +(adm?'<div class="notice"><b>Dieser QR-Code gilt nur für diesen Verein.</b> Er funktioniert erst, wenn die Seite öffentlich im Internet erreichbar ist. Trage oben die endgültige Adresse ein, bevor du den Code druckst.</div>':'');
+}
+function drawQR(){
+  var el=document.getElementById('qr');if(!el)return;
+  var url=qrTarget();el.innerHTML='';
+  if(!url){el.textContent='Bitte Adresse eintragen.';return}
+  if(typeof QRCode==='undefined'){el.textContent='QR-Code konnte nicht geladen werden.';return}
+  try{new QRCode(el,{text:url,width:224,height:224,colorDark:'#000000',colorLight:'#ffffff',correctLevel:QRCode.CorrectLevel.M})}
+  catch(err){el.textContent='QR-Code konnte nicht erstellt werden.'}
+}
+
+/* ---------- Seitenaufbau ---------- */
+function setupNotice(){
+  return '<div class="notice"><b>Supabase ist noch nicht verbunden.</b><br>Öffne die Datei <code>index.html</code>, suche den Block <code>APP_CONFIG</code> und trage deine Projekt-URL und den „anon public“-Schlüssel ein (Supabase-Dashboard, Project Settings, API). Die Schritte stehen in der ANLEITUNG.</div>';
+}
+function bodyHTML(){
+  var h='';
+  if(login&&!userEmail)h+=loginCard();
+  if(role==='pending')h+='<div class="notice">Dein Konto ist angelegt. Der Superadmin muss es noch freigeben und dir einen Verein zuteilen. Bis dahin kannst du nur abstimmen.</div>';
+  h+=switcher();
+  if(role==='admin'&&!myAdminClubs().length)h+='<div class="notice">Dir ist noch kein Verein zugewiesen. Bitte den Superadmin, dir einen Verein freizugeben.</div>';
+  if(mgmt&&isSuper)return h+clubsMgmtView();
+  if(!curClub){
+    if(!clubs.length)return h+(isSuper?'<div class="empty"><h3>Noch kein Verein</h3><p class="muted">Lege deinen ersten Verein an.</p><button class="btn primary" data-act="mgmt">Vereine verwalten</button></div>':'<div class="empty"><h3>Noch kein Verein eingerichtet</h3><p class="muted">Bitte den Link oder QR-Code deines Vereins verwenden.</p></div>');
+    return h+'<h2>Verein wählen</h2><div class="clubpick">'+clubs.map(function(c){return '<button class="btn" data-act="openClub" data-id="'+c.id+'">'+esc(c.name)+'</button>'}).join('')+'</div>';
+  }
+  if(!loaded)return h+'<p class="muted">Lade Verein…</p>';
+  var adm=canAdmin(),v=adm?(view||'spieltage'):(['vote','statistik','qr'].indexOf(view)>-1?view:'vote');
+  if(adm){
+    var names={spieltage:'Spieltage',mannschaft:'Mannschaft',statistik:'Statistik',qr:'QR-Code',einstellungen:'Einstellungen',vote:'Abstimmung'};
+    h+='<nav class="tabs" aria-label="Bereiche">'+VIEWS.map(function(x){return '<button class="tab" data-act="tab" data-v="'+x+'" aria-current="'+(x===v)+'">'+names[x]+'</button>'}).join('')+'</nav>';
+  }else{
+    var vn={vote:'Abstimmung',statistik:'Statistik',qr:'QR-Code'};
+    h+='<nav class="tabs" aria-label="Bereiche">'+['vote','statistik','qr'].map(function(x){return '<button class="tab" data-act="tab" data-v="'+x+'" aria-current="'+(x===v)+'">'+vn[x]+'</button>'}).join('')+'</nav>';
+  }
+  if(v==='vote')h+=voteView();else if(v==='spieltage')h+=mdView();else if(v==='mannschaft')h+=teamView();else if(v==='statistik')h+=statsView();else if(v==='qr')h+=qrView();else if(v==='einstellungen')h+=settingsView();
+  if(!adm&&clubs.length>1)h+='<div><button class="btn small" data-act="pickAgain">Anderen Verein wählen</button></div>';
+  return h;
+}
+function build(){
+  var h=header();
+  if(setupMissing||!window.supabase)return h+setupNotice();
+  if(!dbOk)return h+'<div class="notice">Die Verbindung zu Supabase konnte nicht aufgebaut werden. Bitte die Seite neu laden.</div>';
+  if(loadErr)return h+'<div class="notice">'+esc(loadErr)+'</div><div><button class="btn" data-act="retry">Erneut versuchen</button></div>'+footerHTML();
+  if(!ready)return h+'<p class="muted">Lade Daten…'+(slow?' Die Verbindung ist langsam, bitte einen Moment Geduld.':'')+'</p>';
+  return h+bodyHTML()+footerHTML();
+}
+
+function render(){
+  var a=document.activeElement,id=a&&a.id,ss=null,se=null;
+  try{ss=a.selectionStart;se=a.selectionEnd}catch(e){}
+  app.innerHTML=build();
+  toMark.forEach(function(k){seen[k]=1});toMark=[];lastPick=null;
+  if(wantConfetti){wantConfetti=false;if(!burstDone){burstDone=true;setTimeout(burst,350)}}
+  if(!mgmt&&curClub&&view==='qr')drawQR();
+  var forced=!!forceFocus,fid=forceFocus||id;forceFocus='';
+  if(fid){var el=document.getElementById(fid);if(el){el.focus();if(!forced&&ss!=null){try{el.setSelectionRange(ss,se)}catch(e){}}}}
+}
+
+/* ---------- Aktionen ---------- */
+function arm(key,fn){
+  if(armed===key){armed='';fn();return}
+  armed=key;render();
+  setTimeout(function(){if(armed===key){armed='';render()}},4000);
+}
+function getMd(id){return cfg.matchdays.filter(function(m){return m.id===id})[0]}
+
+/* ---------- Aktionen ---------- */
+function saveClubMeta(){
+  var id=curClub,body={name:cfg.club.name,crest:cfg.club.crest||null,theme:cfg.theme,settings:cfg.settings};
+  return run(function(){return sb.from('clubs').update(body).eq('id',id).then(chk)});
+}
+function setFlag(u,patch){
+  var cur=members.filter(function(m){return m.voter===u})[0]||{};
+  var row={club_id:curClub,voter:u,label:('label' in patch)?patch.label:(cur.label||''),role:('role' in patch)?patch.role:(cur.role||'Mitglied'),blocked:('blocked' in patch)?patch.blocked:!!cur.blocked};
+  return run(function(){return sb.from('member_flags').upsert(row,{onConflict:'club_id,voter'}).then(chk)});
+}
+document.addEventListener('click',function(e){
+  var t=e.target.closest('[data-act]');if(!t)return;var d=t.dataset,a=d.act;
+  if(a==='tab'){view=d.v;armed='';render()}
+  else if(a==='selTeam'){selTeam=d.id;render()}
+  else if(a==='pick'){pending[d.md]=d.p;lastPick={md:d.md,p:d.p};render()}
+  else if(a==='cast'){castVote(d.md)}
+  else if(a==='closeMd'){run(function(){return sb.rpc('close_matchday',{p_md:d.md}).then(chk)})}
+  else if(a==='openMd'){run(function(){return sb.rpc('reopen_matchday',{p_md:d.md}).then(chk)})}
+  else if(a==='delMd'){arm('md'+d.md,function(){run(function(){return sb.from('matchdays').delete().eq('id',d.md).then(chk)},'Spieltag und Stimmen gelöscht')})}
+  else if(a==='resetMd'){arm('rs'+d.md,function(){run(function(){return sb.from('votes').delete().eq('matchday_id',d.md).then(chk).then(function(){return sb.rpc('reopen_matchday',{p_md:d.md}).then(chk)})},'Stimmen gelöscht, die Wahl ist wieder offen')})}
+  else if(a==='delPlayer'){arm('pl'+d.id,function(){run(function(){return sb.from('players').delete().eq('id',d.id).then(chk)})})}
+  else if(a==='delTeam'){arm('tm'+d.id,function(){selTeam='';run(function(){return sb.from('teams').delete().eq('id',d.id).then(chk)})})}
+  else if(a==='copy'){copyLink()}
+  else if(a==='mgmt'){mgmt=!mgmt;armed='';render()}
+  else if(a==='openClub'){mgmt=false;armed='';selectClub(d.id)}
+  else if(a==='openClubQr'){mgmt=false;view='qr';selectClub(d.id).then(function(){view='qr';render()})}
+  else if(a==='delClub'){arm('cl'+d.id,function(){run(function(){return sb.from('clubs').delete().eq('id',d.id).then(chk)},'Verein gelöscht')})}
+  else if(a==='pickAgain'){curClub='';resetClubState();try{history.replaceState(null,'',location.pathname+location.search)}catch(x){}render()}
+  else if(a==='stab'){stab=d.v;armed='';render()}
+  else if(a==='delMember'){arm('mb'+d.id,function(){run(function(){return sb.from('votes').delete().eq('club_id',curClub).eq('voter',d.id).then(chk).then(function(){return sb.from('member_flags').delete().eq('club_id',curClub).eq('voter',d.id).then(chk)})},'Mitglied und Stimmen gelöscht')})}
+  else if(a==='rmCrest'){cfg.club.crest='';saveClubMeta()}
+  else if(a==='rmPhoto'){run(function(){return sb.from('players').update({photo:null}).eq('id',d.id).then(chk)},'Foto entfernt')}
+  else if(a==='preset'){var pr=PRESETS[+d.i];if(pr){cfg.theme={accent:pr.a,gold:pr.g,bg:'',surface:'',fg:''};applyTheme();saveClubMeta()}}
+  else if(a==='resetTheme'){cfg.theme={accent:'',gold:'',bg:'',surface:'',fg:''};applyTheme();saveClubMeta()}
+  else if(a==='loginToggle'){login=!login;if(login)forceFocus='au-email';render()}
+  else if(a==='authMode'){authForm.mode=authForm.mode==='up'?'in':'up';render()}
+  else if(a==='logout'){doLogout()}
+  else if(a==='retry'){loadErr='';render();refresh(true)}
+});
+document.addEventListener('submit',function(e){
+  var f=e.target.dataset&&e.target.dataset.form;if(!f)return;e.preventDefault();
+  if(f==='auth'){doAuth()}
+  else if(f==='addClub'){
+    var cn=(tf.club||'').trim();if(!cn||!isSuper)return;
+    tf.club='';forceFocus='nc-name';
+    run(function(){return sb.from('clubs').insert({id:rid(),name:cn}).then(chk)},'Verein angelegt');
+  }else if(f==='addTeam'){
+    var n=tf.name.trim();if(!n||!curClub)return;var tid=rid();
+    tf.name='';forceFocus='p-name';selTeam=tid;view='mannschaft';
+    run(function(){return sb.from('teams').insert({id:tid,club_id:curClub,name:n}).then(chk)});
+  }else if(f==='addPlayer'){
+    var tm=cfg.teams.filter(function(x){return x.id===selTeam})[0],nm=pf.name.trim();if(!tm||!nm)return;
+    var row={id:rid(),club_id:curClub,team_id:tm.id,name:nm,nr:pf.nr.trim()};
+    pf={name:'',nr:''};forceFocus='p-name';
+    run(function(){return sb.from('players').insert(row).then(chk)});
+  }else if(f==='bulk'){
+    var tb=cfg.teams.filter(function(x){return x.id===selTeam})[0];if(!tb)return;
+    var have={};tb.players.forEach(function(p){have[p.name.toLowerCase()]=1});
+    var rows=[],skipped=0;
+    bulk.split(/\r?\n/).forEach(function(line){
+      var r=parseLine(line);if(!r)return;
+      var k=r.name.toLowerCase();
+      if(have[k]){skipped++;return}
+      have[k]=1;rows.push({id:rid(),club_id:curClub,team_id:tb.id,name:r.name,nr:r.nr});
+    });
+    if(!rows.length&&!skipped){toast('In der Liste wurde kein Spielername gefunden');return}
+    bulk='';
+    var msg=rows.length+' Spieler hinzugefügt'+(skipped?', '+skipped+' schon vorhanden':'');
+    if(!rows.length){toast(msg);render();return}
+    run(function(){return sb.from('players').insert(rows).then(chk)},msg);
+  }else if(f==='addMd'){
+    var t2=cfg.teams.filter(function(x){return x.id===form.team})[0];if(!t2)return;
+    var roster=t2.players.filter(function(p){return !form.off[p.id]}).map(function(p){return {id:p.id,name:p.name,nr:p.nr}});
+    if(roster.length<2){toast('Mindestens zwei Spieler müssen zur Wahl stehen');return}
+    var md={id:rid(),club_id:curClub,team_id:t2.id,team_name:t2.name,opponent:form.opp.trim(),date:form.date||today(),status:'open',roster:roster};
+    form.opp='';form.off={};
+    run(function(){return sb.from('matchdays').insert(md).then(chk)},'Spieltag angelegt, die Abstimmung läuft');
+  }
+});
+function onField(e){
+  var t=e.target,f=t.dataset&&t.dataset.f;if(!f)return;
+  var ch=e.type==='change';
+  if(f==='team'){if(form.team!==t.value){form.team=t.value;form.off={};render()}}
+  else if(f==='opp')form.opp=t.value;
+  else if(f==='date')form.date=t.value;
+  else if(f.indexOf('r:')===0){var id=f.slice(2);if(t.checked)delete form.off[id];else form.off[id]=true;if(ch)render()}
+  else if(f.indexOf('set:')===0){if(ch){cfg.settings[f.slice(4)]=t.checked;saveClubMeta()}}
+  else if(f.indexOf('photo:')===0){if(ch){var pf0=t.files&&t.files[0];savePhoto(f.slice(6),pf0);try{t.value=''}catch(x){}}}
+  else if(f.indexOf('th:')===0){var tk=f.slice(3);if(THEME_KEYS.indexOf(tk)<0||!HEXRE.test(t.value))return;cfg.theme[tk]=t.value;applyTheme();if(ch)saveClubMeta()}
+  else if(f==='ncname')tf.club=t.value;
+  else if(f==='clubsel'){if(ch&&t.value){mgmt=false;selectClub(t.value)}}
+  else if(f.indexOf('clubname:')===0){if(ch){var cid2=f.slice(9),nn=t.value.trim();if(!nn){toast('Der Vereinsname darf nicht leer sein');refresh(true);return}run(function(){return sb.from('clubs').update({name:nn}).eq('id',cid2).then(chk)})}}
+  else if(f.indexOf('urole:')===0){if(ch){var ru=f.slice(6),rv=t.value;run(function(){return sb.from('app_users').update({role:rv}).eq('user_id',ru).then(chk)},rv==='admin'?'Konto als Admin freigegeben':'Freigabe zurückgenommen')}}
+  else if(f.indexOf('acc:')===0){if(ch){var pr=f.split(':'),au=pr[1],ac=pr[2],on=t.checked;run(function(){return on?sb.from('club_admins').insert({user_id:au,club_id:ac}).then(chk):sb.from('club_admins').delete().eq('user_id',au).eq('club_id',ac).then(chk)})}}
+  else if(f.indexOf('mlabel:')===0){if(ch)setFlag(f.slice(7),{label:t.value.trim()})}
+  else if(f.indexOf('mrole:')===0){if(ch)setFlag(f.slice(6),{role:t.value})}
+  else if(f.indexOf('mvote:')===0){if(ch)setFlag(f.slice(6),{blocked:!t.checked})}
+  else if(f==='cname'){cfg.club.name=t.value;if(ch){if(!t.value.trim()){toast('Der Vereinsname darf nicht leer sein');refresh(true);return}saveClubMeta()}}
+  else if(f==='crest'){if(ch)loadCrest(t.files&&t.files[0])}
+  else if(f==='tname')tf.name=t.value;
+  else if(f==='pname')pf.name=t.value;
+  else if(f==='pbulk')bulk=t.value;
+  else if(f==='pnr')pf.nr=t.value;
+  else if(f==='auemail')authForm.email=t.value;
+  else if(f==='aupw')authForm.pw=t.value;
+  else if(f==='qrurl'){qrBase=t.value;drawQR();var c=document.getElementById('qr-full');if(c)c.textContent=qrTarget()}
+}
+document.addEventListener('input',onField);
+document.addEventListener('change',onField);
+window.addEventListener('hashchange',function(){var hc=hashClub();if(hc&&hc!==curClub&&clubById(hc)){mgmt=false;hashPending=true;refresh(true)}});
+
+function savePhoto(pid,file){
+  if(!file||!sb)return;
+  if(file.size>8*1024*1024){toast('Die Datei ist größer als 8 MB');return}
+  var fr=new FileReader();
+  fr.onerror=function(){toast('Datei konnte nicht gelesen werden')};
+  fr.onload=function(){
+    var img=new Image();
+    img.onerror=function(){toast('Dieses Bildformat wird nicht unterstützt')};
+    img.onload=function(){
+      var S=160,cv=document.createElement('canvas');cv.width=S;cv.height=S;
+      var ctx=cv.getContext('2d');ctx.fillStyle='#ffffff';ctx.fillRect(0,0,S,S);
+      var r=Math.max(S/img.width,S/img.height),w=img.width*r,h=img.height*r;
+      ctx.drawImage(img,(S-w)/2,(S-h)*0.25,w,h);
+      var data=cv.toDataURL('image/jpeg',0.82);
+      run(function(){return sb.from('players').update({photo:data}).eq('id',pid).then(chk)},'Foto gespeichert');
+    };
+    img.src=fr.result;
+  };
+  fr.readAsDataURL(file);
+}
+function loadCrest(file){
+  if(!file)return;
+  if(file.size>5*1024*1024){toast('Die Datei ist größer als 5 MB');return}
+  var fr=new FileReader();
+  fr.onerror=function(){toast('Datei konnte nicht gelesen werden')};
+  fr.onload=function(){
+    var img=new Image();
+    img.onerror=function(){toast('Dieses Bildformat wird nicht unterstützt')};
+    img.onload=function(){
+      var S=200,cv=document.createElement('canvas');cv.width=S;cv.height=S;
+      var ctx=cv.getContext('2d'),r=Math.min(S/img.width,S/img.height),w=img.width*r,h=img.height*r;
+      ctx.drawImage(img,(S-w)/2,(S-h)/2,w,h);
+      var data=cv.toDataURL('image/png');
+      if(data.length>180000)data=cv.toDataURL('image/webp',0.85);
+      cfg.club.crest=data;saveClubMeta();
+    };
+    img.src=fr.result;
+  };
+  fr.readAsDataURL(file);
+}
+async function castVote(mdId){
+  var pid=pending[mdId],m=getMd(mdId);if(!pid||!m||m.status!=='open')return;
+  if(!canVote()){toast(cfg.settings.paused?'Die Abstimmung ist pausiert':'Du kannst gerade nicht abstimmen');return}
+  try{
+    if(!session){
+      var an=await sb.auth.signInAnonymously();if(an.error)throw an.error;
+      session=an.data.session;uid=session.user.id;
+    }
+    chk(await sb.from('votes').upsert({matchday_id:mdId,player_id:pid,voter:uid},{onConflict:'matchday_id,voter'}));
+    delete pending[mdId];
+    toast('Danke, deine Stimme zählt!');burst();try{navigator.vibrate&&navigator.vibrate(40)}catch(x){}
+    await refresh(true);
+  }catch(e){toast(errMsg(e))}
+}
+
+function parseLine(line){
+  line=line.replace(/[\t;]+/g,' ').trim();if(!line)return null;
+  var nr='',name=line,m;
+  if((m=line.match(/^#?(\d{1,2})[\s.,:)\-–]+(.+)$/))){nr=m[1];name=m[2]}
+  else if((m=line.match(/^(.+?)[\s,\-–]+#?(\d{1,2})$/))){name=m[1];nr=m[2]}
+  name=name.replace(/\s+/g,' ').replace(/[,;]+$/,'').trim();
+  if(!/[A-Za-zÄÖÜäöüß]/.test(name))return null;
+  return {name:name,nr:nr};
+}
+function copyLink(){
+  var url=qrTarget();
+  var fallback=function(){var el=document.getElementById('qr-full');if(el){var r=document.createRange();r.selectNodeContents(el);var s=getSelection();s.removeAllRanges();s.addRange(r)}toast('Link markiert, bitte kopieren')};
+  try{navigator.clipboard.writeText(url).then(function(){toast('Link kopiert')},fallback)}catch(err){fallback()}
+}
+/* ---------- Start ---------- */
+(function(){
+  render();
+  if(setupMissing||!window.supabase)return;
+  try{sb=window.supabase.createClient(CONF.SUPABASE_URL,CONF.SUPABASE_ANON_KEY,{auth:{persistSession:true,autoRefreshToken:true}})}
+  catch(e){dbOk=false;render();return}
+  var timer=setTimeout(function(){if(!ready){slow=true;render()}},10000);
+  loadSession().then(function(){return refresh(true)}).then(function(){clearTimeout(timer)}).catch(function(e){clearTimeout(timer);loadErr=errMsg(e);render()});
+  setInterval(function(){if(!document.hidden&&ready)refresh(false)},12000);
+  document.addEventListener('visibilitychange',function(){if(!document.hidden&&ready)refresh(false)});
+})();
+})();
+</script>
+</body>
+</html>
+
