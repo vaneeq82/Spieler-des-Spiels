@@ -1,1 +1,0 @@
-# Spieler-des-Spiels
