@@ -4,9 +4,6 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <title>Spieler des Spiels</title>
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@600;700&family=Inter:wght@400;500;600&display=swap">
 <style>
 :root{color-scheme:light}
 html,body{margin:0}
@@ -220,6 +217,22 @@ input[type=color]{width:48px;height:44px;padding:2px;border:1px solid var(--line
 .crow .row{align-items:center}
 .accgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(190px,1fr));gap:6px}
 
+:root{--display:'Arial Narrow','Helvetica Neue',Arial,system-ui,sans-serif;--body:system-ui,-apple-system,'Segoe UI',Roboto,'Helvetica Neue',Arial,sans-serif}
+.legal{display:flex;flex-direction:column;gap:12px;max-width:68ch}
+.legal h2{margin-top:0}
+.legal .doc{display:flex;flex-direction:column;gap:8px}
+.legal .doc h3{font:700 1.05rem var(--body);letter-spacing:0;margin-top:10px}
+.legal p{line-height:1.6;overflow-wrap:anywhere}
+.legal .doc a{color:var(--accent)}
+.legalfoot a{color:var(--muted);text-decoration:underline}
+.fgrid{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:12px}
+.fgrid .field{min-width:0}
+.cklist{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:8px}
+.cklist li{display:flex;gap:10px;align-items:flex-start;font-size:.92rem}
+.ck{flex:0 0 1.4rem;height:1.4rem;border-radius:50%;display:inline-flex;align-items:center;justify-content:center;font-weight:700;font-size:.8rem}
+.ck.ok{background:var(--accent);color:var(--accent-fg)}
+.ck.bad{background:var(--danger);color:var(--bg)}
+.lg-sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
 input[type=password],input[type=email]{font:400 1rem var(--body);min-height:44px;padding:0 12px;border-radius:8px;border:1px solid var(--line);background:var(--bg);color:var(--fg);width:100%}
 .foot{display:flex;gap:10px;flex-wrap:wrap;align-items:center;justify-content:center;padding-top:14px;font-size:.85rem}
 .crow>.field,.member .field{flex:0 0 auto}
@@ -236,8 +249,13 @@ window.APP_CONFIG = {
   SUPABASE_ANON_KEY: 'sb_publishable_r4Y5KpaFJ5aWuCaXvGNrBg_au8mjyxH'
 };
 </script>
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+<!-- Die Skripte werden zuerst aus dem Ordner vendor/ geladen (datenschutzfreundlich).
+     Fehlen sie dort, lädt die Seite sie ersatzweise von einem CDN. Das wird erkannt und
+     in der Datenschutzerklärung vermerkt. Siehe ANLEITUNG, Abschnitt "Rechtliches". -->
+<script src="vendor/supabase.min.js"></script>
+<script>window.supabase||(window.APP_CDN=true,document.write('<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"><\/script>'))</script>
+<script src="vendor/qrcode.min.js"></script>
+<script>window.QRCode||(window.APP_CDN=true,document.write('<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"><\/script>'))</script>
 </head>
 <body>
 <div class="wrap" id="app"><p class="muted">Lade…</p></div>
@@ -263,6 +281,7 @@ var sb=null, session=null, uid=null, role='', userEmail='', myClubIds=[], isSupe
 var clubs=[], curClub='', cfg=emptyCfg(), photos={}, myVotes={}, myFlag={}, liveCounts={}, members=[], adminUsers=[], clubAdmins=[];
 var dbOk=true, loaded=false, ready=false, slow=false, loadErr='', mgmt=false, login=false, busy=false, hashPending=true;
 var authForm={mode:'in',email:'',pw:''};
+var legal={}, legalErr='', legalPage=parseLegalHash(), lg=false, lgScope='global', lgForm=null, lgOwn=true;
 var view='', selTeam='', armed='', pending={}, forceFocus='';
 var form={team:'',opp:'',date:today(),off:{}}, tf={name:'',club:''}, pf={name:'',nr:''}, bulk='', qrBase='';
 var VIEWS=['spieltage','mannschaft','statistik','qr','einstellungen','vote'];
@@ -400,8 +419,9 @@ async function doRefresh(force){
   await loadClub();
   await loadMine();
   await loadExtras();
+  await loadLegal();
   loadErr='';ready=true;
-  var snap=JSON.stringify([clubs,cfg,photos,myVotes,myFlag,liveCounts,members,adminUsers,clubAdmins,role,myClubIds,curClub,mgmt]);
+  var snap=JSON.stringify([clubs,cfg,photos,myVotes,myFlag,liveCounts,members,adminUsers,clubAdmins,role,myClubIds,curClub,mgmt,legal,legalErr]);
   if(force||snap!==lastSnap){lastSnap=snap;render()}
 }
 function selectClub(id){
@@ -434,7 +454,7 @@ async function doAuth(){
 async function doLogout(){
   try{await sb.auth.signOut()}catch(e){}
   await loadSession();
-  mgmt=false;view='';login=false;lastSnap='';
+  mgmt=false;lg=false;view='';login=false;lastSnap='';
   await refresh(true);
 }
 
@@ -648,6 +668,260 @@ function header(){
     +'</div></header>';
 }
 
+/* ---------- Rechtliches: Impressum und Datenschutz ---------- */
+var LG_IMP=[
+  ['name','Name des Vereins oder Betreibers','z. B. SV Renchen e. V.'],
+  ['form','Rechtsform','z. B. eingetragener Verein'],
+  ['street','Straße und Hausnummer',''],
+  ['zip','PLZ',''],
+  ['city','Ort',''],
+  ['rep','Vertretungsberechtigt','z. B. 1. Vorsitzender Max Mustermann'],
+  ['email','E-Mail-Adresse',''],
+  ['phone','Telefon','zweiter Kontaktweg, empfohlen'],
+  ['regCourt','Registergericht','z. B. Amtsgericht Freiburg'],
+  ['regNo','Vereinsregisternummer','z. B. VR 1234'],
+  ['vat','USt-IdNr. (nur falls vorhanden)',''],
+  ['resp','Inhaltlich verantwortlich (§ 18 Abs. 2 MStV)','Name und Anschrift, nur falls abweichend']
+];
+var LG_DP=[
+  ['dpoName','Datenschutzbeauftragte/r (falls bestellt)',''],
+  ['dpoEmail','E-Mail des/der Datenschutzbeauftragten',''],
+  ['host','Hosting der Webseite','Anbieter und Anschrift, z. B. Cloudflare Pages'],
+  ['region','Standort der Supabase-Datenbank','z. B. Frankfurt, Deutschland (EU)'],
+  ['retention','Speicherdauer der Abstimmungsdaten',''],
+  ['authority','Zuständige Aufsichtsbehörde','Name und Anschrift der Landesdatenschutzbehörde']
+];
+var LG_CHECKS=[
+  ['avvSb','Auftragsverarbeitungsvertrag (AVV) mit Supabase abgeschlossen'],
+  ['avvHost','AVV mit dem Hoster der Webseite abgeschlossen'],
+  ['regionEu','Das Supabase-Projekt liegt in einer EU-Region'],
+  ['photos','Einwilligungen für Spielerfotos liegen vor (bei Minderjährigen von den Eltern)'],
+  ['vvt','Verzeichnis der Verarbeitungstätigkeiten (Art. 30 DSGVO) ist angelegt']
+];
+var LG_RET='bis der Verein den Spieltag oder den Verein löscht';
+
+function lgv(d,k){return String((d&&d[k])||'').trim()}
+function legalEff(club){return (club&&legal[club])||legal.global||null}
+function legalData(club){var r=legalEff(club);return (r&&r.data)||{}}
+function parseLegalHash(){
+  var hs=(location.hash||'').slice(1),m=/^(impressum|datenschutz|nutzung)(?:-([A-Za-z0-9-]+))?$/.exec(hs);
+  if(m)return {type:m[1],scope:m[2]||''};
+  m=/^seite-([a-z0-9]{1,12})$/.exec(hs);
+  return m?{type:'seite',scope:'',id:m[1]}:null;
+}
+function extraPages(d){return (Array.isArray(d.pages)?d.pages:[]).filter(function(p){return p&&/^[a-z0-9]{1,12}$/.test(p.id||'')})}
+function newPageId(){return 's'+Math.random().toString(36).slice(2,8)}
+
+/* Nutzungsbedingungen aus den Angaben erzeugen */
+function nutzungHTML(d){
+  var n=lgv(d,'name')||'der Betreiber';
+  var h='<div class="doc">';
+  h+='<h3>1. Geltungsbereich</h3><p>Diese Bedingungen gelten für die Nutzung der Webseite „Spieler des Spiels“ von '+esc(n)+'. Mit der Nutzung der Abstimmung erklären Sie sich damit einverstanden.</p>';
+  h+='<h3>2. Teilnahme an der Abstimmung</h3><p>Die Teilnahme ist kostenlos und ohne Anmeldung möglich. Pro Spieltag kann von einem Gerät aus eine Stimme abgegeben werden. Ein späteres Ändern der Stimme ist möglich, solange die Abstimmung offen ist. Die Abstimmung kann vom Verein jederzeit beendet, pausiert oder neu geöffnet werden.</p>';
+  h+='<h3>3. Faire Nutzung</h3><p>Es ist untersagt, die Abstimmung zu manipulieren, zum Beispiel durch automatisierte Abfragen, das gezielte Umgehen der Gerätekennung oder die Nutzung fremder Zugänge. Der Verein kann Stimmen löschen und einzelnen Geräten das Stimmrecht entziehen.</p>';
+  h+='<h3>4. Ergebnisse</h3><p>Die Ergebnisse sind ein Stimmungsbild unter den Teilnehmenden. Sie sind nicht repräsentativ und begründen keine Ansprüche.</p>';
+  h+='<h3>5. Spielerdaten und Fotos</h3><p>Namen, Rückennummern und Fotos von Spielern werden vom Verein eingestellt. Fotos werden nur mit Einwilligung veröffentlicht. Wer ein Foto oder seine Angaben entfernt haben möchte, wendet sich an den Verein, siehe Impressum.</p>';
+  h+='<h3>6. Verfügbarkeit und Haftung</h3><p>Eine ununterbrochene Verfügbarkeit der Webseite wird nicht zugesichert. '+esc(n)+' haftet nach den gesetzlichen Vorschriften. Für leicht fahrlässig verursachte Schäden haftet der Betreiber nur bei Verletzung wesentlicher Pflichten und begrenzt auf den vorhersehbaren Schaden. Die Haftung für Vorsatz, grobe Fahrlässigkeit sowie für Schäden an Leben, Körper und Gesundheit bleibt unberührt.</p>';
+  h+='<h3>7. Datenschutz</h3><p>Informationen zur Verarbeitung personenbezogener Daten finden Sie in der Datenschutzerklärung.</p>';
+  h+='<h3>8. Änderungen</h3><p>Der Betreiber kann diese Bedingungen mit Wirkung für die Zukunft ändern. Es gilt die jeweils veröffentlichte Fassung.</p>';
+  if(lgv(d,'termsExtra'))h+=paras(d.termsExtra);
+  return h+'</div>';
+}
+function stripHash(){try{history.replaceState(null,'',location.pathname+location.search)}catch(e){}}
+async function loadLegal(){
+  try{
+    var r=await sb.from('legal').select('scope,data,updated_at');
+    if(r.error)throw r.error;
+    var o={};(r.data||[]).forEach(function(x){o[x.scope]={data:x.data||{},updated:x.updated_at||''}});
+    legal=o;legalErr='';
+  }catch(e){legal={};legalErr=errMsg(e)}
+}
+function paras(t){
+  return String(t||'').split(/\n{2,}/).map(function(p){return p.trim()}).filter(Boolean).map(function(p){return '<p>'+esc(p).replace(/\n/g,'<br>')+'</p>'}).join('');
+}
+function mailLink(m){
+  m=String(m||'').trim();
+  return /^[^\s@<>"']+@[^\s@<>"']+$/.test(m)?'<a href="mailto:'+esc(m)+'">'+esc(m)+'</a>':esc(m);
+}
+function legalMissingCore(d){
+  if(lgv(d,'mode')==='custom')return !(lgv(d,'customImp')&&lgv(d,'customDp'));
+  return !(lgv(d,'name')&&lgv(d,'street')&&lgv(d,'zip')&&lgv(d,'city')&&lgv(d,'email'));
+}
+
+/* Impressum aus den Angaben erzeugen */
+function impressumHTML(d){
+  if(lgv(d,'mode')==='custom')return '<div class="doc">'+paras(d.customImp)+'</div>';
+  var h='<div class="doc"><h3>Angaben gemäß § 5 DDG</h3>';
+  var a=[lgv(d,'name')+(lgv(d,'form')?' ('+lgv(d,'form')+')':''),lgv(d,'street'),(lgv(d,'zip')+' '+lgv(d,'city')).trim()].filter(function(x){return x.trim()});
+  h+='<p>'+a.map(esc).join('<br>')+'</p>';
+  if(lgv(d,'rep'))h+='<h3>Vertreten durch</h3><p>'+esc(lgv(d,'rep'))+'</p>';
+  if(lgv(d,'phone')||lgv(d,'email'))h+='<h3>Kontakt</h3><p>'+(lgv(d,'phone')?'Telefon: '+esc(lgv(d,'phone')):'')+(lgv(d,'phone')&&lgv(d,'email')?'<br>':'')+(lgv(d,'email')?'E-Mail: '+mailLink(lgv(d,'email')):'')+'</p>';
+  if(lgv(d,'regCourt')||lgv(d,'regNo'))h+='<h3>Registereintrag</h3><p>Eintragung im Vereinsregister'+(lgv(d,'regCourt')?'<br>Registergericht: '+esc(lgv(d,'regCourt')):'')+(lgv(d,'regNo')?'<br>Registernummer: '+esc(lgv(d,'regNo')):'')+'</p>';
+  if(lgv(d,'vat'))h+='<h3>Umsatzsteuer-Identifikationsnummer</h3><p>gemäß § 27a Umsatzsteuergesetz: '+esc(lgv(d,'vat'))+'</p>';
+  if(lgv(d,'resp'))h+='<h3>Verantwortlich für den Inhalt nach § 18 Abs. 2 MStV</h3><p>'+esc(lgv(d,'resp')).replace(/\n/g,'<br>')+'</p>';
+  if(lgv(d,'impExtra'))h+=paras(d.impExtra);
+  return h+'</div>';
+}
+
+/* Datenschutzerklärung aus den Angaben erzeugen. Sie beschreibt genau das, was diese App tut. */
+function datenschutzHTML(d){
+  if(lgv(d,'mode')==='custom')return '<div class="doc">'+paras(d.customDp)+'</div>';
+  var c=d.checks||{},ret=lgv(d,'retention')||LG_RET;
+  var ctrl=[lgv(d,'name'),lgv(d,'street'),(lgv(d,'zip')+' '+lgv(d,'city')).trim()].filter(function(x){return x.trim()}).map(esc).join('<br>');
+  var h='<div class="doc">';
+  h+='<h3>1. Verantwortlicher</h3><p>Verantwortlich für die Datenverarbeitung auf dieser Webseite im Sinne der Datenschutz-Grundverordnung (DSGVO) ist:</p>'
+    +'<p>'+(ctrl||'[Angaben fehlen]')+(lgv(d,'email')?'<br>E-Mail: '+mailLink(lgv(d,'email')):'')+(lgv(d,'phone')?'<br>Telefon: '+esc(lgv(d,'phone')):'')+'</p>';
+  if(lgv(d,'dpoName')||lgv(d,'dpoEmail'))h+='<p>Datenschutzbeauftragte/r: '+esc(lgv(d,'dpoName'))+(lgv(d,'dpoEmail')?(lgv(d,'dpoName')?', ':'')+mailLink(lgv(d,'dpoEmail')):'')+'</p>';
+  h+='<h3>2. Worum es auf dieser Webseite geht</h3><p>Auf dieser Webseite können Besucherinnen und Besucher nach einem Spiel abstimmen, wer „Spieler des Spiels“ war. Nach dem Ende einer Abstimmung werden die Ergebnisse als Statistik angezeigt.</p>';
+  h+='<h3>3. Aufruf der Webseite und Hosting</h3><p>Beim Aufruf der Webseite übermittelt Ihr Browser technisch notwendige Daten an den Server, insbesondere Ihre IP-Adresse, Datum und Uhrzeit, die angeforderte Datei sowie Angaben zu Browser und Betriebssystem. Der Hosting-Anbieter verarbeitet sie in Server-Protokollen, um die Seite auszuliefern und ihre Sicherheit zu gewährleisten. Rechtsgrundlage ist Art. 6 Abs. 1 lit. f DSGVO (berechtigtes Interesse an einem sicheren und stabilen Betrieb).</p>';
+  if(lgv(d,'host'))h+='<p>Die Webseite wird gehostet bei: '+esc(lgv(d,'host')).replace(/\n/g,'<br>')+'.'+(c.avvHost?' Mit dem Anbieter besteht ein Vertrag zur Auftragsverarbeitung nach Art. 28 DSGVO.':'')+' Wie lange die Server-Protokolle gespeichert werden, richtet sich nach dem Anbieter.</p>';
+  h+='<h3>4. Datenbank (Supabase)</h3><p>Alle Daten dieser Webseite werden in einer Datenbank des Dienstleisters Supabase (supabase.com) gespeichert. Beim Laden und Speichern von Daten verbindet sich Ihr Browser direkt mit den Servern von Supabase. Dabei wird auch Ihre IP-Adresse übertragen. Rechtsgrundlage ist Art. 6 Abs. 1 lit. f DSGVO (berechtigtes Interesse am Betrieb der Abstimmung).</p>';
+  h+='<p>'+(lgv(d,'region')?'Die Datenbank befindet sich in: '+esc(lgv(d,'region'))+'. ':'')+(c.avvSb?'Mit Supabase besteht ein Vertrag zur Auftragsverarbeitung nach Art. 28 DSGVO. ':'')+'Soweit dabei personenbezogene Daten in ein Land außerhalb der EU oder des EWR übermittelt werden, geschieht das nur unter den Voraussetzungen der Art. 44 ff. DSGVO, zum Beispiel auf Grundlage von Standardvertragsklauseln.</p>';
+  h+='<h3>5. Abstimmung</h3><p>Wenn Sie abstimmen, legt die Webseite für Ihr Gerät automatisch eine zufällige Kennung an (anonyme Anmeldung bei Supabase). Diese Kennung wird zusammen mit dem Spieltag, dem gewählten Spieler und dem Zeitpunkt Ihrer Stimme gespeichert. Ihr Name, Ihre E-Mail-Adresse oder Telefonnummer werden dafür nicht erfasst.</p>'
+    +'<p>Die Kennung dient dazu, Ihre Stimme zu zählen und mehrfache Stimmen von demselben Gerät zu verhindern. Weil sie einem Gerät dauerhaft zugeordnet ist, behandeln wir sie als personenbezogenes Datum. Die Betreiber dieser Webseite können solche Kennungen intern beschriften, zum Beispiel mit einem Namen, und das Stimmrecht entziehen. Rechtsgrundlage ist Art. 6 Abs. 1 lit. f DSGVO (berechtigtes Interesse an einer fairen und nachvollziehbaren Abstimmung). Die Daten werden gespeichert, '+esc(ret)+'.</p>';
+  h+='<h3>6. Speicherung im Browser (Local Storage)</h3><p>Damit Ihr Gerät bei der nächsten Abstimmung wiedererkannt wird, speichert Ihr Browser die Kennung im Local Storage. Dieser Eintrag ist technisch erforderlich, damit die von Ihnen gewünschte Abstimmung funktioniert (§ 25 Abs. 2 Nr. 2 TDDDG). Eine Einwilligung ist dafür nicht notwendig. Sie können den Eintrag jederzeit in den Einstellungen Ihres Browsers löschen. Danach gilt Ihr Gerät bei der nächsten Abstimmung als neues Gerät.</p>';
+  h+='<h3>7. Mannschaften, Spieler, Fotos und Ergebnisse</h3><p>Der Verein pflegt Mannschaften und Spielerlisten mit Name, Rückennummer und optional einem Foto. Diese Angaben sowie die Anzahl der Stimmen je Spieler (sofern der Verein die Ergebnisse nicht ausblendet) sind für alle sichtbar, die die Webseite öffnen. Rechtsgrundlage für Name und Rückennummer ist Art. 6 Abs. 1 lit. f DSGVO (Durchführung der Abstimmung im Spielbetrieb).</p>'
+    +'<p>Fotos veröffentlichen wir nur mit Einwilligung nach Art. 6 Abs. 1 lit. a DSGVO, bei Minderjährigen mit Einwilligung der Sorgeberechtigten. Die Einwilligung kann jederzeit mit Wirkung für die Zukunft widerrufen werden. Das Foto wird dann entfernt. Hochgeladene Fotos werden im Browser verkleinert und in der Datenbank gespeichert.</p>';
+  h+='<h3>8. Konten für Administratoren</h3><p>Für Administratoren gibt es Konten mit E-Mail-Adresse und Passwort. Das Passwort speichert Supabase nur in verschlüsselter Form. Gespeichert werden außerdem die Rolle, die zugeteilten Vereine und eine Anmelde-Sitzung im Local Storage des Browsers. Rechtsgrundlage ist Art. 6 Abs. 1 lit. f DSGVO (berechtigtes Interesse an der Verwaltung der Webseite).</p>';
+  h+='<h3>9. Keine Werbung, kein Tracking</h3><p>Wir setzen keine Analyse-, Werbe- oder Social-Media-Dienste ein und binden keine Karten- oder Videodienste ein. Es werden keine Tracking-Cookies gesetzt.</p>';
+  h+='<h3>10. Eingebundene Programmteile</h3>';
+  if(window.APP_CDN)h+='<p>Zur Anzeige dieser Seite werden Programmbibliotheken von Content-Delivery-Netzwerken geladen (jsDelivr und cdnjs/Cloudflare). Dabei wird Ihre IP-Adresse an deren Server übermittelt. Rechtsgrundlage ist Art. 6 Abs. 1 lit. f DSGVO (berechtigtes Interesse an einer funktionierenden Darstellung der Seite).</p>';
+  else h+='<p>Alle Programmteile und Schriften werden von unserem eigenen Server geladen. Außer der Verbindung zur Datenbank (Abschnitt 4) werden keine Inhalte von Drittanbietern nachgeladen.</p>';
+  h+='<h3>11. Empfänger</h3><p>Empfänger Ihrer Daten sind der Hosting-Anbieter, Supabase als Betreiber der Datenbank und die vom Verein bestimmten Administratoren dieser Webseite. Eine Weitergabe an weitere Dritte findet nicht statt, außer wir sind gesetzlich dazu verpflichtet.</p>';
+  h+='<h3>12. Speicherdauer</h3><p>Abstimmungsdaten werden gespeichert, '+esc(ret)+'. Konten von Administratoren bleiben bestehen, bis sie gelöscht werden. Server-Protokolle löscht der Hosting-Anbieter nach seinen eigenen Fristen.</p>';
+  h+='<h3>13. Ihre Rechte</h3><p>Sie haben das Recht auf Auskunft (Art. 15 DSGVO), Berichtigung (Art. 16), Löschung (Art. 17), Einschränkung der Verarbeitung (Art. 18) und Datenübertragbarkeit (Art. 20). Soweit wir Daten auf Grundlage eines berechtigten Interesses verarbeiten (Art. 6 Abs. 1 lit. f DSGVO), können Sie aus Gründen, die sich aus Ihrer besonderen Situation ergeben, jederzeit widersprechen (Art. 21). Eine erteilte Einwilligung können Sie jederzeit mit Wirkung für die Zukunft widerrufen (Art. 7 Abs. 3).</p>'
+    +'<p>Weil Abstimmende nicht namentlich erfasst werden, können wir Ihre Stimme nur zuordnen, wenn Sie uns Ihre Gerätekennung nennen können (Art. 11 DSGVO). Wenden Sie sich für alle Anliegen an die oben genannte Stelle.</p>';
+  h+='<h3>14. Beschwerderecht</h3><p>Sie haben das Recht, sich bei einer Datenschutz-Aufsichtsbehörde zu beschweren (Art. 77 DSGVO)'+(lgv(d,'authority')?'. Zuständig für uns ist: '+esc(lgv(d,'authority')).replace(/\n/g,'<br>'):'')+'.</p>';
+  h+='<h3>15. Pflicht zur Bereitstellung, automatisierte Entscheidungen</h3><p>Sie sind nicht verpflichtet, Daten bereitzustellen. Ohne die Gerätekennung können Sie jedoch nicht abstimmen. Eine automatisierte Entscheidungsfindung einschließlich Profiling findet nicht statt.</p>';
+  if(lgv(d,'dpExtra'))h+=paras(d.dpExtra);
+  return h+'</div>';
+}
+
+function legalFoot(){
+  var sc=(legalPage&&legalPage.scope)||curClub||'',sfx=sc?'-'+esc(sc):'',d=legalData(sc);
+  var h='<nav class="foot legalfoot" aria-label="Rechtliches"><a href="#impressum'+sfx+'">Impressum</a><a href="#datenschutz'+sfx+'">Datenschutz</a>';
+  if(d.termsOn)h+='<a href="#nutzung'+sfx+'">Nutzungsbedingungen</a>';
+  extraPages(d).forEach(function(p){h+='<a href="#seite-'+p.id+'">'+esc(p.title||'Weitere Angaben')+'</a>'});
+  return h+'</nav>';
+}
+function legalPageHTML(){
+  var lp=legalPage,sc=lp.scope||curClub||'',row=legalEff(sc),d=(row&&row.data)||{};
+  var back=sc?'v-'+sc:'';
+  var h='<div class="legal"><div class="row"><button class="btn small" data-act="legalBack" data-b="'+esc(back)+'">← Zurück</button>'+(isSuper?'<button class="btn small" data-act="legalAdmin" data-sc="'+esc((legal[sc]?sc:'global'))+'">Bearbeiten</button>':'')+'</div>';
+  var pg=lp.type==='seite'?extraPages(d).filter(function(p){return p.id===lp.id})[0]:null;
+  var title={impressum:'Impressum',datenschutz:'Datenschutzerklärung',nutzung:'Nutzungsbedingungen'}[lp.type]||(pg?(pg.title||'Weitere Angaben'):'Seite nicht gefunden');
+  h+='<h2>'+esc(title)+'</h2>';
+  if(loadErr)h+='<div class="notice">Die Angaben konnten nicht geladen werden.</div>';
+  else if(lp.type==='seite'){if(!pg)h+='<div class="notice">Diese Seite gibt es nicht.</div>'}
+  else if(lp.type==='nutzung'&&!d.termsOn)h+='<div class="notice">Für diese Seite gibt es keine Nutzungsbedingungen.</div>';
+  else if(legalMissingCore(d))h+='<div class="notice">Die Angaben des Betreibers sind noch nicht vollständig hinterlegt.'+(isSuper?' Du kannst sie über „Bearbeiten“ eintragen.':'')+'</div>';
+  if(lp.type==='impressum')h+=impressumHTML(d);
+  else if(lp.type==='datenschutz')h+=datenschutzHTML(d);
+  else if(lp.type==='nutzung'){if(d.termsOn)h+=nutzungHTML(d)}
+  else if(pg)h+='<div class="doc">'+paras(pg.text)+'</div>';
+  if(lp.type==='datenschutz'&&row&&row.updated){var dt=new Date(row.updated);if(!isNaN(dt))h+='<p class="muted" style="font-size:.85rem">Stand: '+esc(dt.toLocaleDateString('de-DE'))+'</p>'}
+  return h+'</div>';
+}
+function legalShell(){
+  if(!setupMissing&&sb&&!ready&&!loadErr)return '<div class="legal"><p class="muted">Lade…</p></div>'+legalFoot();
+  return legalPageHTML()+legalFoot();
+}
+
+/* ---------- Rechtliches bearbeiten (nur Superadmin) ---------- */
+function lgLoad(sc){
+  lgScope=sc;
+  var r=legal[sc];
+  lgForm=JSON.parse(JSON.stringify((r&&r.data)||{}));
+  lgOwn=sc==='global'?true:!!r;
+  if(!lgForm.mode)lgForm.mode='gen';
+  if(!('retention' in lgForm))lgForm.retention=LG_RET;
+  if(!lgForm.checks)lgForm.checks={};
+  lgForm.pages=extraPages(lgForm);
+}
+function legalChecks(d){
+  var c=d.checks||{},o=[];
+  function add(ok,t,h){o.push({ok:!!ok,t:t,h:h||''})}
+  if(lgv(d,'mode')==='custom'){
+    add(lgv(d,'customImp').length>40,'Impressum-Text eingefügt');
+    add(lgv(d,'customDp').length>200,'Datenschutz-Text eingefügt','Prüfe, ob er zu dieser App passt: zufällige Geräte-Kennung, Supabase, Spielerfotos, Administrator-Konten.');
+  }else{
+    add(lgv(d,'name')&&lgv(d,'street')&&lgv(d,'zip')&&lgv(d,'city'),'Name und vollständige Anschrift');
+    add(lgv(d,'email'),'E-Mail-Adresse');
+    add(lgv(d,'phone'),'Zweiter Kontaktweg (Telefon)','Neben der E-Mail-Adresse wird in der Regel ein weiterer schneller Kontaktweg erwartet.');
+    add(lgv(d,'rep'),'Vertretungsberechtigte Person','Bei eingetragenen Vereinen der Vorstand.');
+    if(/(\be\.\s?v\b|eingetragener\s+verein)/i.test(lgv(d,'name')+' '+lgv(d,'form')))add(lgv(d,'regCourt')&&lgv(d,'regNo'),'Vereinsregister (Gericht und Nummer)');
+    add(lgv(d,'host'),'Hosting-Anbieter der Webseite');
+    add(lgv(d,'region'),'Standort der Supabase-Datenbank');
+    add(lgv(d,'authority'),'Zuständige Aufsichtsbehörde','Die Landesdatenschutzbehörde deines Bundeslandes.');
+  }
+  LG_CHECKS.forEach(function(k){add(c[k[0]],k[1])});
+  add(!window.APP_CDN,'Skripte kommen vom eigenen Server','Zurzeit werden Bibliotheken von einem CDN geladen. Dabei wird die IP-Adresse der Besucher an Dritte übertragen. Lege den Ordner vendor an (siehe ANLEITUNG).');
+  return o;
+}
+function checksHTML(d){
+  var items=legalChecks(d),bad=items.filter(function(i){return !i.ok}).length;
+  return '<p class="muted" style="font-size:.9rem">'+(bad?bad+(bad===1?' Punkt ist':' Punkte sind')+' noch offen.':'Alles erledigt.')+'</p><ul class="cklist">'
+    +items.map(function(i){return '<li><span class="ck '+(i.ok?'ok':'bad')+'" aria-hidden="true">'+(i.ok?'✓':'!')+'</span><span><span class="lg-sr">'+(i.ok?'Erledigt: ':'Offen: ')+'</span>'+esc(i.t)+(i.h&&!i.ok?'<br><span class="muted" style="font-size:.82rem">'+esc(i.h)+'</span>':'')+'</span></li>'}).join('')+'</ul>';
+}
+function lgUpdateChecks(){var el=document.getElementById('lg-checks');if(el)el.innerHTML=checksHTML(lgForm)}
+function lgField(k,label,ph){
+  return '<div class="field"><label for="lg-'+k+'">'+esc(label)+'</label><input type="text" id="lg-'+k+'" data-f="lg:'+k+'" value="'+esc(lgForm[k]||'')+'" placeholder="'+esc(ph||'')+'" autocomplete="off"></div>';
+}
+function legalAdminView(){
+  if(!lgForm)lgLoad('global');
+  var h='<div class="row"><button class="btn small" data-act="legalClose">← Zurück</button></div><h2>Rechtliches</h2>';
+  h+='<div class="notice">Dieser Bereich hilft dir, Impressum und Datenschutzerklärung für Deutschland bereitzustellen. Er ersetzt keine Rechtsberatung. Lass die Texte am besten von deinem Verband oder einer Anwältin bzw. einem Anwalt prüfen.</div>';
+  if(legalErr)h+='<div class="notice">'+esc(legalErr)+' Führe schema.sql erneut im SQL-Editor aus, damit die Tabelle „legal“ angelegt wird.</div>';
+  h+='<section class="card"><h3>Für wen gelten die Angaben?</h3><div class="field"><label for="lg-scope">Geltungsbereich</label><select id="lg-scope" data-f="lgscope"><option value="global"'+(lgScope==='global'?' selected':'')+'>Alle Vereine (gemeinsame Angaben)</option>'+clubs.map(function(c){return '<option value="'+esc(c.id)+'"'+(lgScope===c.id?' selected':'')+'>Nur '+esc(c.name)+'</option>'}).join('')+'</select></div>';
+  if(lgScope!=='global')h+='<label class="check"><input type="checkbox" id="lg-own" data-f="lgown"'+(lgOwn?' checked':'')+'><span>Dieser Verein hat eigene Angaben (sonst gelten die gemeinsamen)</span></label>';
+  h+='<p class="muted" style="font-size:.85rem">Ungespeicherte Änderungen gehen beim Wechsel des Geltungsbereichs verloren.</p></section>';
+  if(lgScope!=='global'&&!lgOwn){
+    return h+'<section class="card"><p class="muted">Dieser Verein zeigt die gemeinsamen Angaben. Setze den Haken oben, um eigene Angaben zu erfassen.</p><div class="row"><button class="btn primary" data-act="lgSave">Speichern</button></div></section>';
+  }
+  h+='<section class="card"><h3>Art der Texte</h3><div class="chips"><label class="check"><input type="radio" name="lgmode" data-f="lgmode" value="gen"'+(lgForm.mode!=='custom'?' checked':'')+'><span>Texte aus meinen Angaben erzeugen</span></label><label class="check"><input type="radio" name="lgmode" data-f="lgmode" value="custom"'+(lgForm.mode==='custom'?' checked':'')+'><span>Eigene Texte einfügen</span></label></div></section>';
+  if(lgForm.mode==='custom'){
+    h+='<section class="card"><h3>Eigene Texte</h3><p class="muted" style="font-size:.9rem">Reiner Text. Leerzeilen trennen Absätze. HTML wird nicht ausgeführt.</p>'
+      +'<div class="field"><label for="lg-customImp">Impressum</label><textarea id="lg-customImp" data-f="lg:customImp">'+esc(lgForm.customImp||'')+'</textarea></div>'
+      +'<div class="field"><label for="lg-customDp">Datenschutzerklärung</label><textarea id="lg-customDp" data-f="lg:customDp" style="min-height:240px">'+esc(lgForm.customDp||'')+'</textarea></div></section>';
+  }else{
+    h+='<section class="card"><h3>Impressum</h3><p class="muted" style="font-size:.9rem">Pflichtangaben nach § 5 DDG. Für Vereine sind Name, Anschrift, Vertretungsberechtigte, Kontakt und das Vereinsregister üblich.</p><div class="fgrid">'+LG_IMP.map(function(f){return lgField(f[0],f[1],f[2])}).join('')+'</div>'
+      +'<div class="field"><label for="lg-impExtra">Weitere Angaben (optional)</label><textarea id="lg-impExtra" data-f="lg:impExtra">'+esc(lgForm.impExtra||'')+'</textarea></div></section>';
+    h+='<section class="card"><h3>Datenschutzerklärung</h3><p class="muted" style="font-size:.9rem">Verantwortlicher ist der oben genannte Betreiber. Der Text beschreibt, was diese App wirklich tut: Supabase-Datenbank, zufällige Geräte-Kennung beim Abstimmen, Spielerfotos, Administrator-Konten. Ein Datenschutzbeauftragter ist nötig, wenn in der Regel mindestens 20 Personen ständig mit automatisierter Datenverarbeitung beschäftigt sind (§ 38 BDSG).</p><div class="fgrid">'+LG_DP.map(function(f){return lgField(f[0],f[1],f[2])}).join('')+'</div>'
+      +'<div class="field"><label for="lg-dpExtra">Weitere Hinweise (optional)</label><textarea id="lg-dpExtra" data-f="lg:dpExtra">'+esc(lgForm.dpExtra||'')+'</textarea></div></section>';
+  }
+  h+='<section class="card"><h3>Weitere Seiten</h3><p class="muted" style="font-size:.9rem">Nutzungsbedingungen und eigene Seiten (z. B. Haftungsausschluss, Bildrechte, Teilnahmebedingungen) erscheinen als Link unten auf jeder Seite. Gesetzlich vorgeschrieben sind für diese Seite vor allem Impressum und Datenschutzerklärung. Die übrigen Seiten sind freiwillig, aber nützlich.</p>'
+    +'<label class="check"><input type="checkbox" id="lg-terms" data-f="lgterms"'+(lgForm.termsOn?' checked':'')+'><span>Nutzungsbedingungen anzeigen (Text wird erzeugt)</span></label>';
+  (lgForm.pages||[]).forEach(function(p){
+    h+='<div class="member"><div class="field"><label for="lgpt-'+p.id+'">Titel der Seite</label><input type="text" id="lgpt-'+p.id+'" data-f="lgpt:'+p.id+'" value="'+esc(p.title||'')+'" autocomplete="off"></div><div class="field"><label for="lgpx-'+p.id+'">Text</label><textarea id="lgpx-'+p.id+'" data-f="lgpx:'+p.id+'">'+esc(p.text||'')+'</textarea></div><div class="row"><button class="btn small danger" data-act="lgDelPage" data-id="'+p.id+'">Seite entfernen</button></div></div>';
+  });
+  h+='<div class="row"><button class="btn small" data-act="lgAddPage">Seite hinzufügen</button></div></section>';
+  h+='<section class="card"><h3>Das habe ich erledigt</h3><p class="muted" style="font-size:.9rem">Hake nur ab, was wirklich erledigt ist. Die Haken steuern einzelne Sätze der Datenschutzerklärung.</p>'
+    +LG_CHECKS.map(function(k){return '<label class="check"><input type="checkbox" id="lgc-'+k[0]+'" data-f="lgc:'+k[0]+'"'+((lgForm.checks||{})[k[0]]?' checked':'')+'><span>'+esc(k[1])+'</span></label>'}).join('')+'</section>';
+  h+='<section class="card"><h3>Prüfliste</h3><div id="lg-checks">'+checksHTML(lgForm)+'</div></section>';
+  var sfx=lgScope==='global'?'':'-'+esc(lgScope);
+  h+='<section class="card"><div class="row"><button class="btn primary" data-act="lgSave">Speichern</button><a class="btn" href="#impressum'+sfx+'" style="display:inline-flex;align-items:center;text-decoration:none">Impressum ansehen</a><a class="btn" href="#datenschutz'+sfx+'" style="display:inline-flex;align-items:center;text-decoration:none">Datenschutz ansehen</a></div><p class="muted" style="font-size:.85rem">Die Vorschau zeigt den gespeicherten Stand. Speichere also zuerst.</p></section>';
+  return h;
+}
+function legalSave(){
+  var sc=lgScope,body=JSON.parse(JSON.stringify(lgForm||{}));
+  if(sc!=='global'&&!lgOwn){
+    return run(function(){return sb.from('legal').delete().eq('scope',sc).then(chk)},'Dieser Verein nutzt wieder die gemeinsamen Angaben');
+  }
+  var row={scope:sc,club_id:sc==='global'?null:sc,data:body};
+  return run(function(){return sb.from('legal').upsert(row,{onConflict:'scope'}).then(chk)},'Rechtliche Angaben gespeichert');
+}
+function legalNotice(){
+  if(!isSuper||lg)return '';
+  var d=legalData(curClub);
+  if(!legalMissingCore(d))return '';
+  return '<div class="notice">Impressum und Datenschutzerklärung sind noch nicht vollständig. Ohne sie ist die Seite in Deutschland nicht rechtssicher. <button class="btn small" data-act="legalAdmin" data-sc="global">Jetzt ausfüllen</button></div>';
+}
+
+function voteNote(){
+  var sc=curClub?'-'+esc(curClub):'';
+  return '<p class="muted" style="font-size:.82rem">Beim Abstimmen wird eine zufällige Gerätekennung gespeichert, damit jedes Gerät nur einmal abstimmt. Mehr dazu in der <a href="#datenschutz'+sc+'" style="color:inherit">Datenschutzerklärung</a>.</p>';
+}
+
 /* ---------- Anmeldung, Fußzeile ---------- */
 function footerHTML(){
   if(!sb)return '';
@@ -698,7 +972,7 @@ function switcher(){
   if(!isSuper&&list.length<2)return '';
   var h='<div class="switch"><label for="club-sel">Verein</label>';
   if(list.length)h+='<select id="club-sel" data-f="clubsel">'+(mgmt||!curClub?'<option value="">Bitte wählen</option>':'')+list.map(function(c){return '<option value="'+c.id+'"'+((!mgmt&&c.id===curClub)?' selected':'')+'>'+esc(c.name)+'</option>'}).join('')+'</select>';
-  if(isSuper)h+='<button class="btn small'+(mgmt?' primary':'')+'" data-act="mgmt">'+(mgmt?'Verwaltung geöffnet':'Vereine verwalten')+'</button>';
+  if(isSuper)h+='<button class="btn small'+(mgmt?' primary':'')+'" data-act="mgmt">'+(mgmt?'Verwaltung geöffnet':'Vereine verwalten')+'</button><button class="btn small'+(lg?' primary':'')+'" data-act="legalAdmin" data-sc="global">Rechtliches</button>';
   return h+'</div>';
 }
 
@@ -708,7 +982,7 @@ function switchRow(id,key,title,sub,on){
 }
 function settingsTabs(){
   var T=[['allgemein','Allgemein'],['mitglieder','Mitglieder'],['farben','Farben'],['zugriff','Zugriff']];
-  return '<div class="chips">'+T.map(function(x){return '<button type="button" class="chip" data-act="stab" data-v="'+x[0]+'" aria-pressed="'+(stab===x[0])+'">'+x[1]+'</button>'}).join('')+'</div>';
+  return '<div class="chips">'+T.map(function(x){return '<button type="button" class="chip" data-act="stab" data-v="'+x[0]+'" aria-pressed="'+(stab===x[0])+'">'+x[1]+'</button>'}).join('')+(isSuper?'<button type="button" class="chip" data-act="legalAdmin" data-sc="global">Rechtliches</button>':'')+'</div>';
 }
 function memberView(){
   if(!isSuper)return '<div class="notice">Nur der Superadmin verwaltet Mitglieder.</div>';
@@ -787,6 +1061,8 @@ function bodyHTML(){
   if(login&&!userEmail)h+=loginCard();
   if(role==='pending')h+='<div class="notice">Dein Konto ist angelegt. Der Superadmin muss es noch freigeben und dir einen Verein zuteilen. Bis dahin kannst du nur abstimmen.</div>';
   h+=switcher();
+  h+=legalNotice();
+  if(lg&&isSuper)return h+legalAdminView();
   if(role==='admin'&&!myAdminClubs().length)h+='<div class="notice">Dir ist noch kein Verein zugewiesen. Bitte den Superadmin, dir einen Verein freizugeben.</div>';
   if(mgmt&&isSuper)return h+clubsMgmtView();
   if(!curClub){
@@ -802,11 +1078,15 @@ function bodyHTML(){
     var vn={vote:'Abstimmung',statistik:'Statistik',qr:'QR-Code'};
     h+='<nav class="tabs" aria-label="Bereiche">'+['vote','statistik','qr'].map(function(x){return '<button class="tab" data-act="tab" data-v="'+x+'" aria-current="'+(x===v)+'">'+vn[x]+'</button>'}).join('')+'</nav>';
   }
-  if(v==='vote')h+=voteView();else if(v==='spieltage')h+=mdView();else if(v==='mannschaft')h+=teamView();else if(v==='statistik')h+=statsView();else if(v==='qr')h+=qrView();else if(v==='einstellungen')h+=settingsView();
+  if(v==='vote')h+=voteView()+voteNote();else if(v==='spieltage')h+=mdView();else if(v==='mannschaft')h+=teamView();else if(v==='statistik')h+=statsView();else if(v==='qr')h+=qrView();else if(v==='einstellungen')h+=settingsView();
   if(!adm&&clubs.length>1)h+='<div><button class="btn small" data-act="pickAgain">Anderen Verein wählen</button></div>';
   return h;
 }
 function build(){
+  if(legalPage)return legalShell();
+  return build0()+legalFoot();
+}
+function build0(){
   var h=header();
   if(setupMissing||!window.supabase)return h+setupNotice();
   if(!dbOk)return h+'<div class="notice">Die Verbindung zu Supabase konnte nicht aufgebaut werden. Bitte die Seite neu laden.</div>';
@@ -821,7 +1101,7 @@ function render(){
   app.innerHTML=build();
   toMark.forEach(function(k){seen[k]=1});toMark=[];lastPick=null;
   if(wantConfetti){wantConfetti=false;if(!burstDone){burstDone=true;setTimeout(burst,350)}}
-  if(!mgmt&&curClub&&view==='qr')drawQR();
+  if(!legalPage&&!lg&&!mgmt&&curClub&&view==='qr')drawQR();
   var forced=!!forceFocus,fid=forceFocus||id;forceFocus='';
   if(fid){var el=document.getElementById(fid);if(el){el.focus();if(!forced&&ss!=null){try{el.setSelectionRange(ss,se)}catch(e){}}}}
 }
@@ -857,7 +1137,13 @@ document.addEventListener('click',function(e){
   else if(a==='delPlayer'){arm('pl'+d.id,function(){run(function(){return sb.from('players').delete().eq('id',d.id).then(chk)})})}
   else if(a==='delTeam'){arm('tm'+d.id,function(){selTeam='';run(function(){return sb.from('teams').delete().eq('id',d.id).then(chk)})})}
   else if(a==='copy'){copyLink()}
-  else if(a==='mgmt'){mgmt=!mgmt;armed='';render()}
+  else if(a==='mgmt'){mgmt=!mgmt;lg=false;armed='';render()}
+  else if(a==='legalAdmin'){if(!isSuper)return;lg=true;mgmt=false;armed='';if(legalPage){legalPage=null;stripHash()}lgLoad(d.sc&&(d.sc==='global'||clubById(d.sc))?d.sc:'global');render()}
+  else if(a==='legalClose'){lg=false;render()}
+  else if(a==='legalBack'){legalPage=null;if(d.b){try{location.hash=d.b}catch(x){}}else stripHash();render()}
+  else if(a==='lgAddPage'){if(lgForm){lgForm.pages=lgForm.pages||[];lgForm.pages.push({id:newPageId(),title:'',text:''});render()}}
+  else if(a==='lgDelPage'){if(lgForm){lgForm.pages=(lgForm.pages||[]).filter(function(x){return x.id!==d.id});render()}}
+  else if(a==='lgSave'){if(isSuper)legalSave()}
   else if(a==='openClub'){mgmt=false;armed='';selectClub(d.id)}
   else if(a==='openClubQr'){mgmt=false;view='qr';selectClub(d.id).then(function(){view='qr';render()})}
   else if(a==='delClub'){arm('cl'+d.id,function(){run(function(){return sb.from('clubs').delete().eq('id',d.id).then(chk)},'Verein gelöscht')})}
@@ -923,8 +1209,16 @@ function onField(e){
   else if(f.indexOf('set:')===0){if(ch){cfg.settings[f.slice(4)]=t.checked;saveClubMeta()}}
   else if(f.indexOf('photo:')===0){if(ch){var pf0=t.files&&t.files[0];savePhoto(f.slice(6),pf0);try{t.value=''}catch(x){}}}
   else if(f.indexOf('th:')===0){var tk=f.slice(3);if(THEME_KEYS.indexOf(tk)<0||!HEXRE.test(t.value))return;cfg.theme[tk]=t.value;applyTheme();if(ch)saveClubMeta()}
+  else if(f.indexOf('lg:')===0){if(lgForm){lgForm[f.slice(3)]=t.value;lgUpdateChecks()}}
+  else if(f.indexOf('lgc:')===0){if(lgForm){lgForm.checks=lgForm.checks||{};lgForm.checks[f.slice(4)]=t.checked;lgUpdateChecks()}}
+  else if(f==='lgterms'){if(lgForm){lgForm.termsOn=t.checked}}
+  else if(f.indexOf('lgpt:')===0){var pq=(lgForm&&lgForm.pages||[]).filter(function(x){return x.id===f.slice(5)})[0];if(pq)pq.title=t.value}
+  else if(f.indexOf('lgpx:')===0){var pr2=(lgForm&&lgForm.pages||[]).filter(function(x){return x.id===f.slice(5)})[0];if(pr2)pr2.text=t.value}
+  else if(f==='lgmode'){if(ch&&lgForm){lgForm.mode=t.value;render()}}
+  else if(f==='lgscope'){if(ch){lgLoad(t.value);render()}}
+  else if(f==='lgown'){if(ch){lgOwn=t.checked;if(lgOwn&&!legal[lgScope]){lgForm=JSON.parse(JSON.stringify((legal.global&&legal.global.data)||{}));if(!lgForm.mode)lgForm.mode='gen';if(!lgForm.checks)lgForm.checks={}}render()}}
   else if(f==='ncname')tf.club=t.value;
-  else if(f==='clubsel'){if(ch&&t.value){mgmt=false;selectClub(t.value)}}
+  else if(f==='clubsel'){if(ch&&t.value){mgmt=false;lg=false;selectClub(t.value)}}
   else if(f.indexOf('clubname:')===0){if(ch){var cid2=f.slice(9),nn=t.value.trim();if(!nn){toast('Der Vereinsname darf nicht leer sein');refresh(true);return}run(function(){return sb.from('clubs').update({name:nn}).eq('id',cid2).then(chk)})}}
   else if(f.indexOf('urole:')===0){if(ch){var ru=f.slice(6),rv=t.value;run(function(){return sb.from('app_users').update({role:rv}).eq('user_id',ru).then(chk)},rv==='admin'?'Konto als Admin freigegeben':'Freigabe zurückgenommen')}}
   else if(f.indexOf('acc:')===0){if(ch){var pr=f.split(':'),au=pr[1],ac=pr[2],on=t.checked;run(function(){return on?sb.from('club_admins').insert({user_id:au,club_id:ac}).then(chk):sb.from('club_admins').delete().eq('user_id',au).eq('club_id',ac).then(chk)})}}
@@ -943,7 +1237,7 @@ function onField(e){
 }
 document.addEventListener('input',onField);
 document.addEventListener('change',onField);
-window.addEventListener('hashchange',function(){var hc=hashClub();if(hc&&hc!==curClub&&clubById(hc)){mgmt=false;hashPending=true;refresh(true)}});
+window.addEventListener('hashchange',function(){var lp=parseLegalHash();if(lp||legalPage){legalPage=lp;render();return}var hc=hashClub();if(hc&&hc!==curClub&&clubById(hc)){mgmt=false;hashPending=true;refresh(true)}});
 
 function savePhoto(pid,file){
   if(!file||!sb)return;
